@@ -2,7 +2,7 @@ import { rankOf, SEQ_INDEX, suitOf, SUITS, teamOf, type Card, type Suit } from "
 import type { ClientView, PublicSeat } from "../net/protocol";
 import type { HandResult } from "../engine/types";
 import { backImage, cardEl, suitIcon } from "./cards";
-import { clear, getTheme, h, icon, applyTheme } from "./dom";
+import { applyTheme, clear, getSort, getTheme, h, icon, setSort, type SortMode } from "./dom";
 import { getLang, setLang, t } from "./i18n";
 import { isMuted, toggleMuted } from "./sound";
 
@@ -428,10 +428,17 @@ function footer(v: ClientView, ui: UIState, handlers: TableHandlers): HTMLElemen
 
 const SUIT_ORDER: Suit[] = ["s", "h", "d", "c"];
 
-/** Sort a hand grouped by suit (trump first) then low-to-high within each suit. */
-export function sortHand(cards: Card[], trump: Suit | null): Card[] {
+/**
+ * Sort a hand low-to-high (7→A). "suit" groups by suit (trump first); "size"
+ * orders purely by rank across the whole hand, smallest to largest.
+ */
+export function sortHand(cards: Card[], trump: Suit | null, mode: SortMode = "suit"): Card[] {
   const suitKey = (su: Suit) => (trump && su === trump ? -1 : SUIT_ORDER.indexOf(su));
   return [...cards].sort((a, b) => {
+    if (mode === "size") {
+      const d = SEQ_INDEX[rankOf(a)] - SEQ_INDEX[rankOf(b)];
+      return d !== 0 ? d : suitKey(suitOf(a)) - suitKey(suitOf(b));
+    }
     const sa = suitOf(a);
     const sb = suitOf(b);
     if (sa !== sb) return suitKey(sa) - suitKey(sb);
@@ -458,7 +465,7 @@ function declList(v: ClientView): HTMLElement | null {
 function handRow(v: ClientView, ui: UIState, handlers: TableHandlers, yourTurn: boolean): HTMLElement {
   const legal = new Set(v.yourLegal);
   const row = h("div", { class: "hand-row" });
-  for (const card of sortHand(v.yourHand, v.trump)) {
+  for (const card of sortHand(v.yourHand, v.trump, getSort())) {
     const playable = yourTurn && legal.has(card);
     const dim = yourTurn && !legal.has(card);
     const el = cardEl(card, { big: true, playable, dim, selected: ui.selectedCard === card });
@@ -548,6 +555,10 @@ function settingsMenu(handlers: TableHandlers): HTMLElement {
       settingRow(s.language, [
         ["HR", getLang() === "hr", () => { setLang("hr"); handlers.rerender(); }],
         ["EN", getLang() === "en", () => { setLang("en"); handlers.rerender(); }],
+      ]),
+      settingRow(s.sorting, [
+        [s.bySuit, getSort() === "suit", () => { setSort("suit"); handlers.rerender(); }],
+        [s.bySize, getSort() === "size", () => { setSort("size"); handlers.rerender(); }],
       ]),
       settingRow(s.sound, [
         [s.on, !isMuted(), () => { if (isMuted()) toggleMuted(); handlers.rerender(); }],

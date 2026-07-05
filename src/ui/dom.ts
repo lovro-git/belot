@@ -52,6 +52,21 @@ export function toggleTheme(): "light" | "dark" {
   return next;
 }
 
+// --- Hand sort preference --------------------------------------------------
+
+export type SortMode = "suit" | "size";
+
+export function getSort(): SortMode {
+  return localStorage.getItem("belot:sort") === "size" ? "size" : "suit";
+}
+export function setSort(mode: SortMode): void {
+  try {
+    localStorage.setItem("belot:sort", mode);
+  } catch {
+    /* storage disabled — non-fatal */
+  }
+}
+
 /** A round icon button that flips light/dark; re-renders its own glyph. */
 export function themeToggle(cls = ""): HTMLElement {
   const btn = h("button", { class: cls, type: "button", title: "Light / dark" });

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { ClientView, PublicSeat } from "../net/protocol";
 import type { Declaration, HandResult } from "../engine/types";
 import { renderJoin, renderLobby, renderTable, sortHand, type TableHandlers, type UIState } from "./screens";
-import { suitOf } from "../engine/cards";
+import { rankOf, SEQ_INDEX, suitOf } from "../engine/cards";
 
 const noop = () => {};
 const handlers: TableHandlers = {
@@ -95,6 +95,12 @@ describe("sortHand", () => {
     expect(new Set(suits.map((s, i) => `${s}${i}`)).size).toBe(8);
     const groupChanges = suits.filter((s, i) => i > 0 && s !== suits[i - 1]).length;
     expect(groupChanges).toBe(new Set(suits).size - 1);
+  });
+
+  it("size mode orders purely by rank, smallest to largest", () => {
+    const hand = ["9d", "Kh", "7d", "Kd", "Th", "Ad", "Jc", "Qc"];
+    const idx = sortHand(hand, "d", "size").map((c) => SEQ_INDEX[rankOf(c)]);
+    expect(idx).toEqual([...idx].sort((a, b) => a - b)); // non-decreasing by rank
   });
 });
 
