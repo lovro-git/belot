@@ -160,22 +160,32 @@ input:focus-visible {
    ============================================================ */
 .card {
   width: var(--card-big-w);
-  height: calc(var(--card-big-w) * 1.4);
+  aspect-ratio: 181 / 293;
   border-radius: var(--r-card);
-  background: var(--card-bg);
-  color: var(--card-ink);
   position: relative;
-  border: 1px solid var(--card-border);
-  box-shadow: 0 4px 12px rgba(20, 30, 50, 0.16);
   user-select: none;
   flex: none;
+}
+/* Image-backed mađarice cards: the PNG is the whole card (transparent margins),
+   so no drawn background/border — just a drop shadow that follows the art. */
+.card--img {
+  background: transparent;
+  border: none;
+}
+.card-face {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 3px 6px rgba(20, 30, 50, 0.3));
+  -webkit-user-drag: none;
+  user-select: none;
 }
 .card--deal {
   animation: deal 0.4s cubic-bezier(0.22, 0.68, 0.24, 1) both;
 }
 .card--sm {
   width: var(--card-sm-w);
-  height: calc(var(--card-sm-w) * 1.4);
 }
 .card--red {
   color: var(--card-ink-red);
@@ -254,6 +264,12 @@ input:focus-visible {
   height: 1em;
   display: block;
   fill: currentColor;
+}
+.suit-img {
+  width: 1em;
+  height: 1em;
+  object-fit: contain;
+  display: block;
 }
 /* Mađarice suit colours (four-colour deck) */
 .sc-s {
@@ -622,7 +638,7 @@ input:focus-visible {
   transform: translate(-50%, -50%);
   font-size: clamp(120px, 26vmin, 260px);
   line-height: 1;
-  opacity: 0.09;
+  opacity: 0.14;
   pointer-events: none;
 }
 .felt-mark .suit-ico {
@@ -1112,11 +1128,12 @@ input:focus-visible {
   margin: 0 -5px;
 }
 .mini-back {
-  width: calc(var(--card-sm-w) * 0.62);
-  height: calc(var(--card-sm-w) * 0.62 * 1.4);
-  border-radius: 4px;
-  background: repeating-linear-gradient(45deg, #2b3948 0 5px, #243040 5px 10px);
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.1), 0 2px 5px rgba(0, 0, 0, 0.3);
+  width: calc(var(--card-sm-w) * 0.68);
+  aspect-ratio: 181 / 293;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 /* ============================================================

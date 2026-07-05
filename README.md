@@ -120,5 +120,8 @@ builds, and publishes `dist/` to GitHub Pages. Enable it once under
 ## Credits
 
 Rules per [playtoy.tportal.hr](https://playtoy.tportal.hr/belot/rules/124).
+Card art: **mađarice** (Hungarian Tell-pattern) from
+[tomasdrus/hungarian-playing-cards](https://github.com/tomasdrus/hungarian-playing-cards) —
+the Tell pattern design is public domain.
 Sound effects: [Kenney "Casino Audio"](https://kenney.nl/assets/casino-audio)
 (CC0). Fonts: Space Grotesk + Inter.

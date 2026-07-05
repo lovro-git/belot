@@ -1,7 +1,7 @@
 import { SUITS, teamOf, type Card, type Suit } from "../engine/cards";
 import type { ClientView, PublicSeat } from "../net/protocol";
 import type { HandResult } from "../engine/types";
-import { cardEl, suitIcon } from "./cards";
+import { backImage, cardEl, suitIcon } from "./cards";
 import { clear, getTheme, h, icon, applyTheme } from "./dom";
 import { getLang, setLang, t } from "./i18n";
 import { isMuted, toggleMuted } from "./sound";
@@ -228,7 +228,7 @@ function fanBacks(n: number): HTMLElement {
   const spread = 8; // degrees per card from centre
   const mid = (count - 1) / 2;
   const cards = Array.from({ length: count }, (_, i) =>
-    h("div", { class: "fan-card", style: `--rot:${(i - mid) * spread}deg` }, h("div", { class: "mini-back" })),
+    h("div", { class: "fan-card", style: `--rot:${(i - mid) * spread}deg` }, h("img", { class: "mini-back", src: backImage(), alt: "", draggable: "false" })),
   );
   return h("div", { class: "pod-fan" }, ...cards);
 }
