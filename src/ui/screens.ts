@@ -9,6 +9,7 @@ import { isMuted, toggleMuted } from "./sound";
 export interface TableHandlers {
   chooseSeat: (seat: number) => void;
   bid: (suit: Suit | null) => void;
+  declare: (announce: boolean) => void;
   play: (card: Card) => void;
   start: () => void;
   rematch: () => void;
@@ -253,6 +254,11 @@ function centerContent(v: ClientView, handlers: TableHandlers): Array<HTMLElemen
       ),
     ];
   }
+  if (v.phase === "declaring") {
+    const actorName = v.declActor >= 0 && v.seats[v.declActor] ? v.seats[v.declActor]!.name : "";
+    const status = v.declActor === v.yourSeat ? s.yourZvanje : v.declActor >= 0 ? s.choosingZvanje(actorName) : s.showingZvanja;
+    return [declList(v), h("div", { class: "center-status" }, status)];
+  }
   // bidding or playing
   const actorName = v.actor >= 0 && v.seats[v.actor] ? v.seats[v.actor]!.name : "";
   const status =
@@ -349,6 +355,18 @@ function footer(v: ClientView, ui: UIState, handlers: TableHandlers): HTMLElemen
     );
   }
 
+  // Declaration: your turn to announce your zvanje
+  if (v.phase === "declaring" && v.declActor === v.yourSeat) {
+    const total = v.yourDeclarations.reduce((n, d) => n + d.points, 0);
+    return h("div", { class: "footer" },
+      h("div", { class: "bid-bar" },
+        h("button", { class: "btn btn-gold pass-btn", onclick: () => handlers.declare(true) }, `${s.declare} ${total}`),
+        h("button", { class: "btn btn-ghost pass-btn", onclick: () => handlers.declare(false) }, s.skipDecl),
+      ),
+      handRow(v, ui, handlers, false),
+    );
+  }
+
   // Playing / waiting for others: show your hand
   const yourTurn = v.phase === "playing" && v.actor === v.yourSeat;
   // Drop a stale selection when it's not actionable anymore.
@@ -364,15 +382,31 @@ function footer(v: ClientView, ui: UIState, handlers: TableHandlers): HTMLElemen
 
 const SUIT_ORDER: Suit[] = ["s", "h", "d", "c"];
 
-/** Sort a hand grouped by suit (trump first) then high-to-low within each suit. */
+/** Sort a hand grouped by suit (trump first) then low-to-high within each suit. */
 export function sortHand(cards: Card[], trump: Suit | null): Card[] {
   const suitKey = (su: Suit) => (trump && su === trump ? -1 : SUIT_ORDER.indexOf(su));
   return [...cards].sort((a, b) => {
     const sa = suitOf(a);
     const sb = suitOf(b);
     if (sa !== sb) return suitKey(sa) - suitKey(sb);
-    return SEQ_INDEX[rankOf(b)] - SEQ_INDEX[rankOf(a)];
+    return SEQ_INDEX[rankOf(a)] - SEQ_INDEX[rankOf(b)];
   });
+}
+
+const DECL_LABEL: Record<string, string> = { seq3: "Terca", seq4: "Kvarta", seq5: "Kvinta", four: "Karé" };
+
+/** The announced zvanja, shown to everyone with their cards and value. */
+function declList(v: ClientView): HTMLElement | null {
+  if (v.declarations.length === 0) return null;
+  return h("div", { class: "decl-panel" },
+    ...v.declarations.map((d) =>
+      h("div", { class: "decl-item" },
+        h("span", { class: "decl-who" }, v.seats[d.seat]?.name ?? ""),
+        h("div", { class: "decl-cards" }, ...d.cards.map((c) => cardEl(c, { small: true }))),
+        h("span", { class: "decl-val" }, `${DECL_LABEL[d.kind]} ${d.points}`),
+      ),
+    ),
+  );
 }
 
 function handRow(v: ClientView, ui: UIState, handlers: TableHandlers, yourTurn: boolean): HTMLElement {

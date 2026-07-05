@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   applyBid,
+  applyDeclare,
+  beginPlay,
   createGame,
   currentActor,
+  declActor,
   defaultConfig,
   isForcedBidder,
   isHandInProgress,
@@ -40,6 +43,22 @@ function seatFour(s: GameState) {
 function bidFirstCallsSpades(s: GameState) {
   const actor = currentActor(s);
   expect(applyBid(s, actor, { type: "call", suit: "s" })).toBe(true);
+}
+
+/** Walk through the declaration phase: everyone announces, then play begins. */
+function settleDeclarations(s: GameState) {
+  let guard = 0;
+  while (s.phase === "declaring" && guard++ < 10) {
+    const a = declActor(s);
+    if (a >= 0) applyDeclare(s, a, true);
+    else beginPlay(s);
+  }
+}
+
+/** Bid ♠ then clear any declarations, ending in the playing phase. */
+function bidThenPlay(s: GameState) {
+  bidFirstCallsSpades(s);
+  settleDeclarations(s);
 }
 
 /** Play every card by always choosing the first legal move, until the hand resolves. */
@@ -93,7 +112,7 @@ describe("bidding — mus", () => {
     const dealerActor = currentActor(s);
     expect(applyBid(s, dealerActor, { type: "pass" })).toBe(false);
     expect(applyBid(s, dealerActor, { type: "call", suit: "h" })).toBe(true);
-    expect(s.phase).toBe("playing");
+    expect(["declaring", "playing"]).toContain(s.phase);
     expect(s.hand!.caller).toBe(s.hand!.dealer);
   });
 });
@@ -103,7 +122,7 @@ describe("trick display pause", () => {
     const s = createGame(defaultConfig(1001));
     seatFour(s);
     startMatch(s, rng(3));
-    bidFirstCallsSpades(s);
+    bidThenPlay(s);
     for (let i = 0; i < 4; i++) {
       const a = currentActor(s);
       playCard(s, a, legalPlays(s, a)[0]);
@@ -121,13 +140,34 @@ describe("trick display pause", () => {
   });
 });
 
+describe("declaration phase", () => {
+  it("enters declaring when a player holds a zvanje, then announces into play", () => {
+    for (let seed = 1; seed < 60; seed++) {
+      const s = createGame(defaultConfig(1001));
+      seatFour(s);
+      startMatch(s, rng(seed));
+      applyBid(s, currentActor(s), { type: "call", suit: "s" });
+      if (s.phase === "declaring") {
+        expect(declActor(s)).toBeGreaterThanOrEqual(0);
+        expect(s.hand!.declarations.length).toBeGreaterThan(0);
+        settleDeclarations(s);
+        expect(s.phase).toBe("playing");
+        // Announced declarations were scored to a team.
+        expect(s.hand!.declPoints[0] + s.hand!.declPoints[1]).toBeGreaterThan(0);
+        return;
+      }
+    }
+    throw new Error("no declaring phase found across seeds");
+  });
+});
+
 describe("full hand flow", () => {
   it("plays 8 tricks, scores, and rotates the dealer", () => {
     const s = createGame(defaultConfig(1001));
     seatFour(s);
     startMatch(s, rng(3));
     const firstDealer = s.hand!.dealer;
-    bidFirstCallsSpades(s);
+    bidThenPlay(s);
     expect(s.phase).toBe("playing");
     playOutHand(s);
 
@@ -153,6 +193,7 @@ describe("full hand flow", () => {
     let guard = 0;
     while (s.phase !== "matchOver" && guard++ < 200) {
       if (s.phase === "bidding") bidFirstCallsSpades(s);
+      if (s.phase === "declaring") settleDeclarations(s);
       if (s.phase === "playing") playOutHand(s);
       if (s.phase === "handScored") nextHand(s, rng(guard + 10));
     }

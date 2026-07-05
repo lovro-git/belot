@@ -60,6 +60,7 @@ function toast(text: string) {
 const handlers: TableHandlers = {
   chooseSeat: (seat) => client?.chooseSeat(seat),
   bid: (suit) => client?.bid(suit),
+  declare: (announce) => client?.declare(announce),
   play: (card) => client?.play(card),
   start: () => client?.start(),
   rematch: () => client?.rematch(),

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ClientView, PublicSeat } from "../net/protocol";
-import type { HandResult } from "../engine/types";
+import type { Declaration, HandResult } from "../engine/types";
 import { renderLobby, renderTable, sortHand, type TableHandlers, type UIState } from "./screens";
 import { suitOf } from "../engine/cards";
 
@@ -9,6 +9,7 @@ const noop = () => {};
 const handlers: TableHandlers = {
   chooseSeat: noop,
   bid: noop,
+  declare: noop,
   play: noop,
   start: noop,
   rematch: noop,
@@ -61,6 +62,8 @@ function baseView(over: Partial<ClientView> = {}): ClientView {
     handPoints: [0, 0],
     handThreshold: 0,
     lastTrickWinner: -1,
+    declActor: -1,
+    yourDeclarations: [],
     declarations: [],
     declWinnerTeam: -1,
     declPoints: [0, 0],
@@ -85,8 +88,8 @@ describe("sortHand", () => {
     // Trump suit comes first as a contiguous block.
     const trumpRun = sorted.filter((c) => suitOf(c) === "d");
     expect(sorted.slice(0, trumpRun.length)).toEqual(trumpRun);
-    // Within trumps, natural high-to-low: A, K, 9, 7.
-    expect(trumpRun).toEqual(["Ad", "Kd", "9d", "7d"]);
+    // Within trumps, natural low-to-high: 7, 9, K, A.
+    expect(trumpRun).toEqual(["7d", "9d", "Kd", "Ad"]);
     // Same suits stay grouped together (no interleaving).
     const suits = sorted.map(suitOf);
     expect(new Set(suits.map((s, i) => `${s}${i}`)).size).toBe(8);
@@ -179,6 +182,19 @@ describe("renderTable across phases", () => {
       handlers,
     );
     expect(root.querySelectorAll(".trick-card").length).toBe(4);
+  });
+
+  it("declaring: your announce prompt, and everyone sees the announced zvanja", () => {
+    const decl: Declaration = { seat: 0, kind: "seq3", points: 20, order: 0, cards: ["7s", "8s", "9s"], announced: true };
+    renderTable(
+      root,
+      baseView({ matchStarted: true, phase: "declaring", trump: "s", declActor: 0, yourDeclarations: [decl], declarations: [decl] }),
+      ui,
+      handlers,
+    );
+    expect(root.querySelectorAll(".footer .bid-bar button").length).toBe(2); // Zovi + Preskoči
+    expect(root.querySelector(".decl-panel")).toBeTruthy();
+    expect(root.querySelectorAll(".decl-cards .card").length).toBe(3); // the terca's three cards
   });
 
   it("handScored: shows the result banner", () => {

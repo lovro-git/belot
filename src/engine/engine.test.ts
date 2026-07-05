@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { cardValue, fullDeck, teamOf, trickBeats, type Card } from "./cards";
 import { legalCards, trickWinnerSeat } from "./rules";
-import { belaHolder, detectDeclarations, resolveDeclarations } from "./declarations";
+import { belaHolder, detectDeclarations, resolveAnnounced, resolveDeclarations } from "./declarations";
+import type { Declaration } from "./types";
 import { scoreHand } from "./scoring";
 import type { HandState, PlayedCard } from "./types";
 
@@ -113,6 +114,17 @@ describe("declarations", () => {
     const r2 = resolveDeclarations(hands, [1, 0, 3, 2], "d");
     expect(r2.winnerTeam).toBe(teamOf(1));
   });
+  it("resolves only announced declarations", () => {
+    const d = (seat: number, points: number, order: number, announced: boolean): Declaration => ({ seat, kind: "seq3", points, order, cards: [], announced });
+    // Only seat 0's is announced → team 0 wins with 20 even though seat 1's is bigger.
+    expect(resolveAnnounced([d(0, 20, 0, true), d(1, 50, 1, false)])).toEqual({ winnerTeam: 0, points: [20, 0] });
+    // Both announced → the bigger (seat 1) wins.
+    expect(resolveAnnounced([d(0, 20, 0, true), d(1, 50, 1, true)])).toEqual({ winnerTeam: 1, points: [0, 50] });
+    // Equal points → earlier bidding order (seat 0) wins.
+    expect(resolveAnnounced([d(0, 20, 0, true), d(1, 20, 1, true)])).toEqual({ winnerTeam: 0, points: [20, 0] });
+    // Nothing announced → no winner.
+    expect(resolveAnnounced([d(0, 20, 0, false)])).toEqual({ winnerTeam: -1, points: [0, 0] });
+  });
   it("finds bela (K+Q of trump in one hand)", () => {
     expect(belaHolder([["Ks", "Qs", "7h", "8h", "9h", "Ac", "Kc", "Qc"], [], [], []], "s")).toBe(0);
     expect(belaHolder([["Ks", "Qh", "7h", "8h", "9h", "Ac", "Kc", "Qc"], [], [], []], "s")).toBe(-1);
@@ -148,6 +160,8 @@ function makeHand(winners: number[], callerTeam: 0 | 1, extra: Partial<HandState
     tricks,
     trickWinners: winners,
     declarations: [],
+    declDecided: [true, true, true, true],
+    declResolved: true,
     declWinnerTeam: -1,
     declPoints: [0, 0],
     belaSeat: -1,

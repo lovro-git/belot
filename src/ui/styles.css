@@ -52,7 +52,8 @@
   --shadow-lg: 0 22px 55px rgba(20, 30, 50, 0.16);
 
   --card-big-w: clamp(64px, 12vw, 104px); /* your hand */
-  --card-sm-w: clamp(38px, 6vw, 58px); /* trick pile */
+  --card-sm-w: clamp(38px, 6vw, 58px); /* opponent fans */
+  --card-trick-w: clamp(60px, 11vw, 96px); /* played cards in the centre */
   --av-size: clamp(40px, 5vw, 60px);
 
   --ff-display: "Space Grotesk", system-ui, sans-serif;
@@ -897,6 +898,9 @@ input:focus-visible {
   left: 50%;
   top: 50%;
 }
+.trick-card .card--sm {
+  width: var(--card-trick-w);
+}
 .tc-bottom {
   transform: translate(-50%, 6%);
 }
@@ -929,6 +933,45 @@ input:focus-visible {
   color: var(--felt-ink-dim);
   font-size: 13px;
   margin-top: 4px;
+}
+
+/* --- Announced declarations (zvanja) shown to everyone --- */
+.decl-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(11, 19, 15, 0.85);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  color: var(--felt-ink);
+  max-width: 90vw;
+  animation: pop 0.3s ease both;
+}
+.decl-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.decl-who {
+  font-family: var(--ff-display);
+  font-weight: 600;
+  font-size: 12px;
+  min-width: 46px;
+  white-space: nowrap;
+}
+.decl-cards {
+  display: flex;
+  gap: 2px;
+  --card-sm-w: clamp(26px, 4.6vw, 38px);
+}
+.decl-val {
+  margin-left: auto;
+  font-family: var(--ff-display);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--gold-soft);
+  white-space: nowrap;
 }
 
 /* --- Banners --- */
@@ -1210,6 +1253,7 @@ input:focus-visible {
   :root {
     --card-big-w: clamp(58px, 18vw, 92px);
     --card-sm-w: clamp(34px, 9vw, 50px);
+    --card-trick-w: clamp(56px, 17vw, 88px);
     --av-size: clamp(34px, 10vw, 50px);
   }
   .felt-wrap {

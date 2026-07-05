@@ -21,7 +21,7 @@ export function detectDeclarations(hand: Card[], seat: number, order: number): D
   }
   for (const [r, cards] of byRank) {
     if (cards.length === 4 && FOUR_POINTS[r]) {
-      out.push({ seat, order, kind: "four", points: FOUR_POINTS[r], cards: [...cards] });
+      out.push({ seat, order, kind: "four", points: FOUR_POINTS[r], cards: [...cards], announced: false });
     }
   }
 
@@ -32,7 +32,7 @@ export function detectDeclarations(hand: Card[], seat: number, order: number): D
     const flush = () => {
       if (run.length >= 3) {
         const len = run.length;
-        out.push({ seat, order, kind: len >= 5 ? "seq5" : len === 4 ? "seq4" : "seq3", points: seqPoints(len), cards: [...run] });
+        out.push({ seat, order, kind: len >= 5 ? "seq5" : len === 4 ? "seq4" : "seq3", points: seqPoints(len), cards: [...run], announced: false });
       }
       run = [];
     };
@@ -80,6 +80,24 @@ export function resolveDeclarations(hands: Card[][], bidOrder: number[], trump: 
   for (const d of all) if (teamOf(d.seat) === winnerTeam) points[winnerTeam] += d.points;
 
   return { declarations: all, winnerTeam, points };
+}
+
+/**
+ * Resolve the winner among the *announced* declarations only. The team with the
+ * single strongest announced declaration scores all of its announced ones; ties
+ * on points go to the earlier bidding position.
+ */
+export function resolveAnnounced(declarations: Declaration[]): { winnerTeam: 0 | 1 | -1; points: [number, number] } {
+  const announced = declarations.filter((d) => d.announced);
+  if (announced.length === 0) return { winnerTeam: -1, points: [0, 0] };
+  let best = announced[0];
+  for (const d of announced) {
+    if (d.points > best.points || (d.points === best.points && d.order < best.order)) best = d;
+  }
+  const winnerTeam = teamOf(best.seat);
+  const points: [number, number] = [0, 0];
+  for (const d of announced) if (teamOf(d.seat) === winnerTeam) points[winnerTeam] += d.points;
+  return { winnerTeam, points };
 }
 
 /** Seat holding both K and Q of the trump suit (bela), or -1. */

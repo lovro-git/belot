@@ -12,6 +12,7 @@ export type Command =
   | { t: "ping"; playerId: string }
   | { t: "chooseSeat"; playerId: string; seat: number }
   | { t: "bid"; playerId: string; suit: Suit | null } // null = pass ("dalje")
+  | { t: "declare"; playerId: string; announce: boolean }
   | { t: "play"; playerId: string; card: Card }
   | { t: "leave"; playerId: string };
 
@@ -63,7 +64,9 @@ export interface ClientView {
   /** Points the calling team needs to make its contract (0 before trump is set). */
   handThreshold: number;
 
-  declarations: Declaration[]; // shown once trump is set
+  declActor: number; // seat currently deciding whether to announce its zvanje (-1)
+  yourDeclarations: Declaration[]; // your own detected zvanja (for the announce prompt)
+  declarations: Declaration[]; // announced zvanja, shown to everyone (with their cards)
   declWinnerTeam: 0 | 1 | -1;
   declPoints: [number, number];
   belaAnnouncedTeam: 0 | 1 | -1; // once the first bela card is played
@@ -163,7 +166,9 @@ export function viewFor(state: GameState, ctx: ViewContext): ClientView {
     handPoints,
     handThreshold,
     lastTrickWinner: h && h.trickWinners.length ? h.trickWinners[h.trickWinners.length - 1] : -1,
-    declarations: h?.revealed ? h.declarations : [],
+    declActor: state.phase === "declaring" ? actor : -1,
+    yourDeclarations: h && yourSeat >= 0 ? h.declarations.filter((d) => d.seat === yourSeat) : [],
+    declarations: h ? h.declarations.filter((d) => d.announced) : [],
     declWinnerTeam: h?.declWinnerTeam ?? -1,
     declPoints: h?.declPoints ?? [0, 0],
     belaAnnouncedTeam: h && h.belaShown && h.belaSeat >= 0 ? teamOf(h.belaSeat) : -1,

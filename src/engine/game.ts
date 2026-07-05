@@ -1,9 +1,9 @@
 import { suitOf, teamOf, type Suit } from "./cards";
 import { deal } from "./deal";
-import { belaHolder, isBelaCard, resolveDeclarations } from "./declarations";
+import { belaHolder, detectDeclarations, isBelaCard, resolveAnnounced } from "./declarations";
 import { legalCards, trickWinnerSeat } from "./rules";
 import { scoreHand } from "./scoring";
-import type { BidChoice, Config, GameState, HandState, Target } from "./types";
+import type { BidChoice, Config, Declaration, GameState, HandState, Target } from "./types";
 
 export function defaultConfig(target: Target = 1001): Config {
   return { target };
@@ -25,7 +25,7 @@ export function createGame(config: Config): GameState {
 }
 
 export function isHandInProgress(s: GameState): boolean {
-  return s.phase === "bidding" || s.phase === "playing";
+  return s.phase === "bidding" || s.phase === "declaring" || s.phase === "playing";
 }
 
 export function seatCount(s: GameState): number {
@@ -117,6 +117,8 @@ export function startHand(s: GameState, dealer: number, rng: () => number = Math
     tricks: [],
     trickWinners: [],
     declarations: [],
+    declDecided: [],
+    declResolved: false,
     declWinnerTeam: -1,
     declPoints: [0, 0],
     belaSeat: -1,
@@ -131,6 +133,7 @@ export function currentActor(s: GameState): number {
   const h = s.hand;
   if (!h) return -1;
   if (s.phase === "bidding") return h.bidOrder[h.bidTurn];
+  if (s.phase === "declaring") return declActor(s);
   if (s.phase === "playing") return h.turn;
   return -1;
 }
@@ -161,13 +164,60 @@ function finalizeTrump(s: GameState, seat: number, trump: Suit): void {
   h.caller = seat;
   h.callerTeam = teamOf(seat);
   h.revealed = true; // the two hidden cards are now picked up
-
-  const res = resolveDeclarations(h.hands, h.bidOrder, trump);
-  h.declarations = res.declarations;
-  h.declWinnerTeam = res.winnerTeam;
-  h.declPoints = res.points;
   h.belaSeat = belaHolder(h.hands, trump);
 
+  // Detect every player's declarations, but none count until announced.
+  const all: Declaration[] = [];
+  for (let sd = 0; sd < 4; sd++) {
+    const order = h.bidOrder.indexOf(sd);
+    for (const d of detectDeclarations(h.hands[sd], sd, order)) all.push(d);
+  }
+  h.declarations = all;
+  h.declDecided = [0, 1, 2, 3].map((sd) => !all.some((d) => d.seat === sd));
+  h.declResolved = false;
+  h.declWinnerTeam = -1;
+  h.declPoints = [0, 0];
+
+  if (all.length === 0) startPlay(s);
+  else s.phase = "declaring";
+}
+
+/** Seat currently deciding whether to announce its zvanje, in bidding order (-1 if none). */
+export function declActor(s: GameState): number {
+  const h = s.hand;
+  if (!h || s.phase !== "declaring" || h.declResolved) return -1;
+  for (const seat of h.bidOrder) if (!h.declDecided[seat]) return seat;
+  return -1;
+}
+
+/** A player with a zvanje announces it (announce=true) or keeps it hidden (false). */
+export function applyDeclare(s: GameState, seat: number, announce: boolean): boolean {
+  const h = s.hand;
+  if (!h || s.phase !== "declaring" || declActor(s) !== seat) return false;
+  h.declDecided[seat] = true;
+  if (announce) for (const d of h.declarations) if (d.seat === seat) d.announced = true;
+
+  if (declActor(s) === -1) {
+    // Everyone has decided — resolve the winner from the announced zvanja.
+    const r = resolveAnnounced(h.declarations);
+    h.declWinnerTeam = r.winnerTeam;
+    h.declPoints = r.points;
+    if (h.declarations.some((d) => d.announced)) h.declResolved = true; // brief reveal before play
+    else startPlay(s);
+  }
+  return true;
+}
+
+/** After the announced zvanja have been shown to everyone, begin trick play. */
+export function beginPlay(s: GameState): boolean {
+  const h = s.hand;
+  if (!h || s.phase !== "declaring" || !h.declResolved) return false;
+  startPlay(s);
+  return true;
+}
+
+function startPlay(s: GameState): void {
+  const h = s.hand!;
   h.leader = h.bidOrder[0];
   h.turn = h.leader;
   h.currentTrick = [];

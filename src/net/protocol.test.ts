@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { botBid, botPlay } from "../engine/bots";
-import { applyBid, createGame, currentActor, playCard, resolveTrick, seatPlayer, startMatch, trickPending } from "../engine/game";
+import { applyBid, applyDeclare, beginPlay, createGame, currentActor, declActor, playCard, resolveTrick, seatPlayer, startMatch, trickPending } from "../engine/game";
 import type { GameState } from "../engine/types";
 import { viewFor, type ViewContext } from "./protocol";
 
@@ -29,6 +29,16 @@ function newMatch(): GameState {
   return s;
 }
 
+/** Clear the declaration phase (announce everything) to reach trick play. */
+function settle(s: GameState) {
+  let guard = 0;
+  while (s.phase === "declaring" && guard++ < 10) {
+    const a = declActor(s);
+    if (a >= 0) applyDeclare(s, a, true);
+    else beginPlay(s);
+  }
+}
+
 describe("viewFor redaction", () => {
   it("hides the two face-down cards during bidding (you see only 6)", () => {
     const s = newMatch();
@@ -43,6 +53,7 @@ describe("viewFor redaction", () => {
     const s = newMatch();
     const bidder = currentActor(s);
     applyBid(s, bidder, { type: "call", suit: "s" }); // force trump
+    settle(s);
     expect(s.phase).toBe("playing");
 
     const mine = viewFor(s, ctx("p0"));
@@ -56,6 +67,7 @@ describe("viewFor redaction", () => {
   it("a spectator sees no hand and the public trick is identical for everyone", () => {
     const s = newMatch();
     applyBid(s, currentActor(s), { type: "call", suit: "h" });
+    settle(s);
     // Play one card.
     const actor = currentActor(s);
     playCard(s, actor, botPlay(s, actor));
@@ -71,9 +83,13 @@ describe("viewFor redaction", () => {
   it("drives a full bot hand end-to-end through the view pipeline", () => {
     const s = newMatch();
     let guard = 0;
-    while ((s.phase === "bidding" || s.phase === "playing") && guard++ < 90) {
+    while ((s.phase === "bidding" || s.phase === "declaring" || s.phase === "playing") && guard++ < 90) {
       if (trickPending(s)) {
         resolveTrick(s);
+        continue;
+      }
+      if (s.phase === "declaring") {
+        settle(s);
         continue;
       }
       const actor = currentActor(s);

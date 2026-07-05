@@ -9,11 +9,12 @@ export interface Config {
 /**
  * waiting     – not 4 players yet, or match not started (lobby / seat picking)
  * bidding     – zvanje aduta: players call trump or pass
+ * declaring   – players with a zvanje choose to announce it (shown to everyone)
  * playing     – trick play
  * handScored  – a hand finished; result populated; pause before the next deal
  * matchOver   – a team reached the target score
  */
-export type Phase = "waiting" | "bidding" | "playing" | "handScored" | "matchOver";
+export type Phase = "waiting" | "bidding" | "declaring" | "playing" | "handScored" | "matchOver";
 
 export interface Seat {
   playerId: string;
@@ -34,6 +35,8 @@ export interface Declaration {
   cards: Card[];
   /** Position in the bidding order (0 = first to the dealer's right), for tie-breaks. */
   order: number;
+  /** The holder chose to announce it (only announced declarations score / are shown). */
+  announced: boolean;
 }
 
 export interface HandState {
@@ -56,8 +59,10 @@ export interface HandState {
   tricks: PlayedCard[][]; // completed tricks, in order
   trickWinners: number[]; // winning seat of each completed trick (parallel to tricks)
 
-  // Declarations & bela (resolved once trump is set)
-  declarations: Declaration[];
+  // Declarations & bela
+  declarations: Declaration[]; // all detected; only `announced` ones count
+  declDecided: boolean[]; // per seat: has this seat decided whether to announce
+  declResolved: boolean; // all decisions in; announced zvanja on display before play
   declWinnerTeam: 0 | 1 | -1;
   declPoints: [number, number];
   belaSeat: number; // seat holding K+Q of trump (-1 if none)

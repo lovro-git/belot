@@ -3,6 +3,8 @@ import type { Card, Suit } from "../engine/cards";
 import { botBid, botPlay } from "../engine/bots";
 import {
   applyBid,
+  applyDeclare,
+  beginPlay,
   chooseSeat,
   createGame,
   currentActor,
@@ -32,6 +34,7 @@ export interface Client {
   onView(cb: (v: ClientView) => void): void;
   chooseSeat(seat: number): void;
   bid(suit: Suit | null): void;
+  declare(announce: boolean): void;
   play(card: Card): void;
   start(): void; // host: begin the match; guest: no-op
   rematch(): void; // host: new match; guest: no-op
@@ -84,6 +87,7 @@ class HostClient implements Client {
   private mockIds = new Set<string>();
   private progressScheduled = false;
   private trickScheduled = false;
+  private declScheduled = false;
   private botKey = "";
   private stopped = false;
 
@@ -129,6 +133,9 @@ class HostClient implements Client {
   }
   bid(suit: Suit | null) {
     this.handle({ t: "bid", playerId: this.me.playerId, suit });
+  }
+  declare(announce: boolean) {
+    this.handle({ t: "declare", playerId: this.me.playerId, announce });
   }
   play(card: Card) {
     this.handle({ t: "play", playerId: this.me.playerId, card });
@@ -190,6 +197,11 @@ class HostClient implements Client {
         if (idx >= 0) applyBid(s, idx, cmd.suit ? { type: "call", suit: cmd.suit } : { type: "pass" });
         break;
       }
+      case "declare": {
+        const idx = s.seats.findIndex((x) => x?.playerId === cmd.playerId);
+        if (idx >= 0) applyDeclare(s, idx, cmd.announce);
+        break;
+      }
       case "play": {
         const idx = s.seats.findIndex((x) => x?.playerId === cmd.playerId);
         if (idx >= 0) playCard(s, idx, cmd.card);
@@ -233,6 +245,19 @@ class HostClient implements Client {
   private drive() {
     if (this.stopped) return;
     const s = this.state;
+
+    // After all zvanja are decided, show the announced ones briefly, then play.
+    if (s.phase === "declaring" && s.hand?.declResolved && !this.declScheduled) {
+      this.declScheduled = true;
+      setTimeout(() => {
+        this.declScheduled = false;
+        if (!this.stopped && this.state.phase === "declaring") {
+          beginPlay(this.state);
+          this.afterChange();
+        }
+      }, 2600);
+      return;
+    }
 
     // Hold a completed trick on the table briefly, then gather it to its winner.
     if (trickPending(s) && !this.trickScheduled) {
@@ -290,6 +315,7 @@ class HostClient implements Client {
     const s = this.state;
     if (currentActor(s) !== seat || !this.mockIds.has(s.seats[seat]?.playerId ?? "")) return;
     if (s.phase === "bidding") applyBid(s, seat, botBid(s, seat));
+    else if (s.phase === "declaring") applyDeclare(s, seat, true); // bots always announce
     else if (s.phase === "playing") playCard(s, seat, botPlay(s, seat));
     this.afterChange();
   }
@@ -372,6 +398,9 @@ class GuestClient implements Client {
   }
   bid(suit: Suit | null) {
     this.pub({ t: "bid", playerId: this.me.playerId, suit });
+  }
+  declare(announce: boolean) {
+    this.pub({ t: "declare", playerId: this.me.playerId, announce });
   }
   play(card: Card) {
     this.pub({ t: "play", playerId: this.me.playerId, card });
