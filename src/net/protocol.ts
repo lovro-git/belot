@@ -67,6 +67,7 @@ export interface ClientView {
   declActor: number; // seat currently deciding whether to announce its zvanje (-1)
   yourDeclarations: Declaration[]; // your own detected zvanja (for the announce prompt)
   declarations: Declaration[]; // announced zvanja, shown to everyone (with their cards)
+  declaredTeams: [boolean, boolean]; // which teams announced a zvanje (even the losing one)
   declWinnerTeam: 0 | 1 | -1;
   declPoints: [number, number];
   belaAnnouncedTeam: 0 | 1 | -1; // once the first bela card is played
@@ -173,6 +174,11 @@ export function viewFor(state: GameState, ctx: ViewContext): ClientView {
       h && h.declResolved && h.declWinnerTeam >= 0
         ? h.declarations.filter((d) => d.announced && teamOf(d.seat) === h.declWinnerTeam)
         : [],
+    declaredTeams: (() => {
+      const dt: [boolean, boolean] = [false, false];
+      if (h && h.declResolved) for (const d of h.declarations) if (d.announced) dt[teamOf(d.seat)] = true;
+      return dt;
+    })(),
     declWinnerTeam: h?.declWinnerTeam ?? -1,
     declPoints: h?.declPoints ?? [0, 0],
     belaAnnouncedTeam: h && h.belaShown && h.belaSeat >= 0 ? teamOf(h.belaSeat) : -1,

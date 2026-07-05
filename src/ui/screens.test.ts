@@ -65,6 +65,7 @@ function baseView(over: Partial<ClientView> = {}): ClientView {
     declActor: -1,
     yourDeclarations: [],
     declarations: [],
+    declaredTeams: [false, false],
     declWinnerTeam: -1,
     declPoints: [0, 0],
     belaAnnouncedTeam: -1,
@@ -204,13 +205,14 @@ describe("renderTable across phases", () => {
     const decl: Declaration = { seat: 0, kind: "seq3", points: 20, order: 0, cards: ["7s", "8s", "9s"], announced: true };
     renderTable(
       root,
-      baseView({ matchStarted: true, phase: "declaring", trump: "s", declActor: 0, yourDeclarations: [decl], declarations: [decl] }),
+      baseView({ matchStarted: true, phase: "declaring", trump: "s", declActor: 0, yourDeclarations: [decl], declarations: [decl], declWinnerTeam: 0, declaredTeams: [true, true] }),
       ui,
       handlers,
     );
     expect(root.querySelectorAll(".footer .bid-bar button").length).toBe(2); // Zovi + Preskoči
     expect(root.querySelector(".decl-panel")).toBeTruthy();
     expect(root.querySelectorAll(".decl-cards .card").length).toBe(3); // the terca's three cards
+    expect(root.querySelector(".decl-other")).toBeTruthy(); // the other team also declared
   });
 
   it("handScored: shows the result banner", () => {

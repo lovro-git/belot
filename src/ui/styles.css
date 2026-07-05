@@ -973,6 +973,13 @@ input:focus-visible {
   color: var(--gold-soft);
   white-space: nowrap;
 }
+.decl-other {
+  font-size: 11.5px;
+  color: var(--felt-ink-dim);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 6px;
+  text-align: center;
+}
 
 /* --- Banners --- */
 .winner-banner {
