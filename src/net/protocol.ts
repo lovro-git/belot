@@ -1,4 +1,4 @@
-import { teamOf, type Card, type Suit } from "../engine/cards";
+import { cardValue, teamOf, type Card, type Suit } from "../engine/cards";
 import { currentActor, isForcedBidder, legalPlays } from "../engine/game";
 import type { Config, Declaration, GameState, HandResult, Phase, PlayedCard } from "../engine/types";
 
@@ -58,6 +58,11 @@ export interface ClientView {
   tricksWon: [number, number];
   lastTrickWinner: number;
 
+  /** Live running points this hand per team (trick points + declarations + shown bela). */
+  handPoints: [number, number];
+  /** Points the calling team needs to make its contract (0 before trump is set). */
+  handThreshold: number;
+
   declarations: Declaration[]; // shown once trump is set
   declWinnerTeam: 0 | 1 | -1;
   declPoints: [number, number];
@@ -112,6 +117,24 @@ export function viewFor(state: GameState, ctx: ViewContext): ClientView {
   const tricksWon: [number, number] = [0, 0];
   if (h) for (const w of h.trickWinners) tricksWon[teamOf(w)]++;
 
+  // Live hand tally: trick card points so far + declarations + bela (once shown).
+  const handPoints: [number, number] = [0, 0];
+  let handThreshold = 0;
+  if (h && h.trump) {
+    for (let i = 0; i < h.tricks.length; i++) {
+      let pts = 0;
+      for (const pc of h.tricks[i]) pts += cardValue(pc.card, h.trump);
+      handPoints[teamOf(h.trickWinners[i])] += pts;
+    }
+    if (h.tricks.length === 8) handPoints[teamOf(h.trickWinners[7])] += 10; // last trick
+    const belaShown = h.belaShown && h.belaSeat >= 0;
+    handPoints[0] += h.declPoints[0];
+    handPoints[1] += h.declPoints[1];
+    if (belaShown) handPoints[teamOf(h.belaSeat)] += 20;
+    const total = 162 + h.declPoints[0] + h.declPoints[1] + (belaShown ? 20 : 0);
+    handThreshold = Math.floor(total / 2) + 1;
+  }
+
   return {
     you: ctx.you,
     yourSeat,
@@ -137,6 +160,8 @@ export function viewFor(state: GameState, ctx: ViewContext): ClientView {
     currentTrick: h?.currentTrick ?? [],
     leader: h?.leader ?? -1,
     tricksWon,
+    handPoints,
+    handThreshold,
     lastTrickWinner: h && h.trickWinners.length ? h.trickWinners[h.trickWinners.length - 1] : -1,
     declarations: h?.revealed ? h.declarations : [],
     declWinnerTeam: h?.declWinnerTeam ?? -1,

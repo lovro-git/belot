@@ -1,4 +1,4 @@
-import { SUITS, teamOf, type Card, type Suit } from "../engine/cards";
+import { rankOf, SEQ_INDEX, suitOf, SUITS, teamOf, type Card, type Suit } from "../engine/cards";
 import type { ClientView, PublicSeat } from "../net/protocol";
 import type { HandResult } from "../engine/types";
 import { backImage, cardEl, suitIcon } from "./cards";
@@ -170,21 +170,19 @@ function topbar(v: ClientView, handlers: TableHandlers): HTMLElement {
 }
 
 function scoreboard(v: ClientView): HTMLElement {
-  const s = t();
+  const inHand = !!v.trump && (v.phase === "playing" || v.phase === "handScored");
   const rows = ([0, 1] as const).map((team) =>
     h("div", { class: `sb-row ${v.yourSeat >= 0 && teamOf(v.yourSeat) === team ? "is-us" : ""}` },
       h("span", { class: `sb-team team-${team}` }, teamLabel(v, team)),
       h("span", { class: "sb-score tnum" }, String(v.scores[team])),
-      v.matchStarted ? h("span", { class: "sb-tricks" }, `${v.tricksWon[team]}♦`) : null,
+      inHand ? h("span", { class: "sb-hand tnum" }, `+${v.handPoints[team]}`) : v.matchStarted ? h("span", { class: "sb-tricks" }, String(v.tricksWon[team])) : null,
     ),
   );
   return h("div", { class: "scoreboard" },
-    h("div", { class: "sb-head" }, `${s.target} ${v.config.target}`),
     ...rows,
-    v.trump ? h("div", { class: "sb-trump" }, s.trump, " ", suitSpan(v.trump)) : null,
-    v.caller >= 0 && v.seats[v.caller] ? h("div", { class: "sb-caller" }, s.calledBy(v.seats[v.caller]!.name)) : null,
-    v.declPoints[0] + v.declPoints[1] > 0
-      ? h("div", { class: "sb-decl" }, `${s.declarations}: ${teamLabel(v, v.declWinnerTeam === -1 ? 0 : v.declWinnerTeam)} +${Math.max(v.declPoints[0], v.declPoints[1])}`)
+    v.trump ? h("div", { class: "sb-trump" }, suitSpan(v.trump), v.caller >= 0 && v.seats[v.caller] ? h("span", { class: "sb-caller" }, v.seats[v.caller]!.name) : null) : null,
+    inHand && v.callerTeam >= 0
+      ? h("div", { class: "sb-need" }, `${teamLabel(v, v.callerTeam as 0 | 1)} `, h("b", { class: "tnum" }, `${v.handPoints[v.callerTeam as 0 | 1]}/${v.handThreshold}`))
       : null,
   );
 }
@@ -359,9 +357,22 @@ function footer(v: ClientView, handlers: TableHandlers): HTMLElement {
   return h("div", { class: "footer" }, handRow(v, handlers, yourTurn));
 }
 
+const SUIT_ORDER: Suit[] = ["s", "h", "d", "c"];
+
+/** Sort a hand grouped by suit (trump first) then high-to-low within each suit. */
+function sortHand(cards: Card[], trump: Suit | null): Card[] {
+  const suitKey = (su: Suit) => (trump && su === trump ? -1 : SUIT_ORDER.indexOf(su));
+  return [...cards].sort((a, b) => {
+    const sa = suitOf(a);
+    const sb = suitOf(b);
+    if (sa !== sb) return suitKey(sa) - suitKey(sb);
+    return SEQ_INDEX[rankOf(b)] - SEQ_INDEX[rankOf(a)];
+  });
+}
+
 function handRow(v: ClientView, handlers: TableHandlers, yourTurn: boolean): HTMLElement {
   const legal = new Set(v.yourLegal);
-  const cards = v.yourHand.map((card) => {
+  const cards = sortHand(v.yourHand, v.trump).map((card) => {
     const playable = yourTurn && legal.has(card);
     const dim = yourTurn && !legal.has(card);
     return cardEl(card, { big: true, playable, dim, onClick: playable ? () => handlers.play(card) : undefined });

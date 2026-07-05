@@ -57,6 +57,8 @@ function baseView(over: Partial<ClientView> = {}): ClientView {
     currentTrick: [],
     leader: -1,
     tricksWon: [0, 0],
+    handPoints: [0, 0],
+    handThreshold: 0,
     lastTrickWinner: -1,
     declarations: [],
     declWinnerTeam: -1,
@@ -122,6 +124,8 @@ describe("renderTable across phases", () => {
         yourLegal: ["7h", "8h"],
         currentTrick: [{ seat: 3, card: "9h" }],
         tricksWon: [1, 2],
+        handPoints: [28, 41],
+        handThreshold: 82,
       }),
       ui,
       handlers,
@@ -130,6 +134,9 @@ describe("renderTable across phases", () => {
     expect(root.querySelectorAll(".card--play").length).toBe(2);
     expect(root.querySelector(".trick-card")).toBeTruthy();
     expect(root.querySelector(".scoreboard")).toBeTruthy();
+    // Live hand tally is shown for both teams, plus the caller's progress line.
+    expect(root.querySelectorAll(".sb-hand").length).toBe(2);
+    expect(root.querySelector(".sb-need")).toBeTruthy();
     // Opponents/partner show face-down fans (3 pods, not your own seat).
     expect(root.querySelectorAll(".pod-fan").length).toBe(3);
   });
