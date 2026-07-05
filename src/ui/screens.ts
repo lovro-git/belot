@@ -472,7 +472,20 @@ function handRow(v: ClientView, ui: UIState, handlers: TableHandlers, yourTurn: 
     attachCardGestures(el, card, playable, ui, handlers);
     row.append(el);
   }
-  return row;
+  return h("div", { class: "hand-wrap" },
+    v.yourHand.length > 0 ? h("div", { class: "hand-tools" }, sortToggle(handlers)) : null,
+    row,
+  );
+}
+
+/** A small toggle beside the hand: sort by suit (Znak) or by size (Veličina). */
+function sortToggle(handlers: TableHandlers): HTMLElement {
+  const s = t();
+  const mode = getSort();
+  return h("button", { class: "sort-toggle", title: s.sorting, onclick: () => { setSort(mode === "suit" ? "size" : "suit"); handlers.rerender(); } },
+    icon("arrow-down-wide-short"),
+    h("span", {}, mode === "suit" ? s.bySuit : s.bySize),
+  );
 }
 
 /**
@@ -555,10 +568,6 @@ function settingsMenu(handlers: TableHandlers): HTMLElement {
       settingRow(s.language, [
         ["HR", getLang() === "hr", () => { setLang("hr"); handlers.rerender(); }],
         ["EN", getLang() === "en", () => { setLang("en"); handlers.rerender(); }],
-      ]),
-      settingRow(s.sorting, [
-        [s.bySuit, getSort() === "suit", () => { setSort("suit"); handlers.rerender(); }],
-        [s.bySize, getSort() === "size", () => { setSort("size"); handlers.rerender(); }],
       ]),
       settingRow(s.sound, [
         [s.on, !isMuted(), () => { if (isMuted()) toggleMuted(); handlers.rerender(); }],
