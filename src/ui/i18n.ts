@@ -1,0 +1,152 @@
+// Minimal i18n. Croatian by default, English toggle. Strings are either plain
+// text or small functions for interpolation.
+
+export type Lang = "hr" | "en";
+
+const HR = {
+  tagline: "Belot koji igraš s prijateljima u pregledniku.",
+  name: "Ime",
+  namePlaceholder: "Tvoje ime",
+  create: "Napravi stol",
+  join: "Uđi",
+  or: "ili",
+  roomKey: "Šifra stola",
+  roomKeyPlaceholder: "npr. BEL-ABCD",
+  target: "Do koliko bodova",
+  start: "Počni igru",
+  rematch: "Nova igra",
+  leave: "Izađi",
+  leaveShort: "Izađi",
+  copyInvite: "Kopiraj poziv",
+  copied: "Poziv kopiran",
+  connecting: "Spajanje na stol…",
+  connectingSlow: "Još spajam… provjeri šifru i vezu.",
+  spectator: "Gledatelj",
+  spectators: (n: number) => `${n} gledatelj${n === 1 ? "" : "a"}`,
+  waitingPlayers: "Čekamo igrače",
+  seatsFilled: (n: number) => `${n}/4 sjede`,
+  sitHere: "Sjedni",
+  emptySeat: "Slobodno",
+  hostStarts: "Domaćin počinje igru kad su 4 igrača.",
+  waitStart: "Čekamo da domaćin počne…",
+  teamUs: "Mi",
+  teamThem: "Vi",
+  trump: "Adut",
+  noTrump: "—",
+  pass: "Dalje",
+  callTrump: "Zovi aduta",
+  yourBidTurn: "Zovi aduta ili reci dalje",
+  bidding: (name: string) => `${name} bira aduta…`,
+  mustCall: "Moraš zvati (mus)",
+  yourPlayTurn: "Na tebi je",
+  playing: (name: string) => `Na potezu: ${name}`,
+  calledBy: (name: string) => `Zvao: ${name}`,
+  tricks: "Štihovi",
+  declarations: "Zvanja",
+  bela: "Bela!",
+  handNo: (n: number) => `Dijeljenje ${n}`,
+  passed: "Prošli",
+  fell: "Pali",
+  capot: "Štiglja",
+  lastTrick: "Zadnji štih",
+  points: "bodova",
+  waitingReconnect: (name: string) => `Čeka se ${name} da se vrati…`,
+  gamePaused: "Igra pauzirana",
+  matchWon: (team: string) => `Pobjeda: ${team}`,
+  youWon: "Pobijedili ste!",
+  youLost: "Izgubili ste.",
+  settings: "Postavke",
+  theme: "Tema",
+  light: "Svijetlo",
+  dark: "Tamno",
+  language: "Jezik",
+  sound: "Zvuk",
+  on: "Uklj.",
+  off: "Isklj.",
+  callerMade: (team: string) => `${team} prošli`,
+  callerFell: (team: string) => `${team} pali`,
+};
+
+const EN: typeof HR = {
+  tagline: "Belot you play with friends right in the browser.",
+  name: "Name",
+  namePlaceholder: "Your name",
+  create: "Create table",
+  join: "Join",
+  or: "or",
+  roomKey: "Room key",
+  roomKeyPlaceholder: "e.g. BEL-ABCD",
+  target: "Play up to",
+  start: "Start game",
+  rematch: "Rematch",
+  leave: "Leave",
+  leaveShort: "Leave",
+  copyInvite: "Copy invite",
+  copied: "Invite copied",
+  connecting: "Connecting to table…",
+  connectingSlow: "Still connecting… check the key and your connection.",
+  spectator: "Spectator",
+  spectators: (n: number) => `${n} spectator${n === 1 ? "" : "s"}`,
+  waitingPlayers: "Waiting for players",
+  seatsFilled: (n: number) => `${n}/4 seated`,
+  sitHere: "Sit here",
+  emptySeat: "Open",
+  hostStarts: "The host starts once 4 players are seated.",
+  waitStart: "Waiting for the host to start…",
+  teamUs: "Us",
+  teamThem: "Them",
+  trump: "Trump",
+  noTrump: "—",
+  pass: "Pass",
+  callTrump: "Call trump",
+  yourBidTurn: "Call trump or pass",
+  bidding: (name: string) => `${name} is choosing trump…`,
+  mustCall: "You must call (mus)",
+  yourPlayTurn: "Your turn",
+  playing: (name: string) => `Turn: ${name}`,
+  calledBy: (name: string) => `Called by ${name}`,
+  tricks: "Tricks",
+  declarations: "Declarations",
+  bela: "Bela!",
+  handNo: (n: number) => `Deal ${n}`,
+  passed: "Made it",
+  fell: "Fell",
+  capot: "Capot",
+  lastTrick: "Last trick",
+  points: "points",
+  waitingReconnect: (name: string) => `Waiting for ${name} to return…`,
+  gamePaused: "Game paused",
+  matchWon: (team: string) => `Winner: ${team}`,
+  youWon: "You won!",
+  youLost: "You lost.",
+  settings: "Settings",
+  theme: "Theme",
+  light: "Light",
+  dark: "Dark",
+  language: "Language",
+  sound: "Sound",
+  on: "On",
+  off: "Off",
+  callerMade: (team: string) => `${team} made it`,
+  callerFell: (team: string) => `${team} fell`,
+};
+
+const STR: Record<Lang, typeof HR> = { hr: HR, en: EN };
+
+export function getLang(): Lang {
+  return localStorage.getItem("belot:lang") === "en" ? "en" : "hr";
+}
+
+export function setLang(l: Lang): void {
+  try {
+    localStorage.setItem("belot:lang", l);
+  } catch {
+    /* non-fatal */
+  }
+  document.documentElement.setAttribute("lang", l);
+}
+
+/** Strings for the current language. */
+export function t(): typeof HR {
+  return STR[getLang()];
+}
