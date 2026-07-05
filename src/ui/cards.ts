@@ -6,12 +6,14 @@ function rankLabel(card: Card): string {
   return r === "T" ? "10" : r;
 }
 
-// Inline SVG suit paths — Font Awesome Free lacks club/spade, so we draw our own.
+// Mađarice (German-suited / Hungarian Tell deck) suits, drawn as inline SVG:
+//   s → Leaves (zelje/list) · h → Hearts (herc/srce) ·
+//   d → Bells (zvona/bundeve) · c → Acorns (žir/želudi)
 const SUIT_PATH: Record<Suit, string> = {
   h: "M12 20.5C6.5 16 3 12.9 3 9.1 3 6.3 5.2 4 8 4c1.7 0 3.2.9 4 2.2C12.8 4.9 14.3 4 16 4c2.8 0 5 2.3 5 5.1 0 3.8-3.5 6.9-9 11.4z",
-  d: "M12 3l6.5 9L12 21 5.5 12z",
-  s: "M12 3C8.5 7.2 4.5 9.8 4.5 13.6c0 2.2 1.7 3.9 3.9 3.9 1 0 1.9-.4 2.6-1-.1 1.9-1 3.4-2.6 4.5h7.2c-1.6-1.1-2.5-2.6-2.6-4.5.7.6 1.6 1 2.6 1 2.2 0 3.9-1.7 3.9-3.9C19.5 9.8 15.5 7.2 12 3z",
-  c: "M12 3.2a3.1 3.1 0 0 0-2.55 4.86A3.1 3.1 0 1 0 8.9 14.1c.83 0 1.58-.32 2.14-.85-.13 1.9-1 3.35-2.54 4.55h7c-1.54-1.2-2.41-2.65-2.54-4.55.56.53 1.31.85 2.14.85a3.1 3.1 0 1 0-.55-6.04A3.1 3.1 0 0 0 12 3.2z",
+  s: "M12 3C9 7 5.5 9.5 5.5 13.4A4.4 4.4 0 0 0 11 17.6V21h2v-3.4a4.4 4.4 0 0 0 5.5-4.2C18.5 9.5 15 7 12 3z",
+  d: "M12 2.5a1.6 1.6 0 0 0-1.5 2C7.8 5.4 6.3 7.9 6.3 11.1c0 3-1 4.6-2.1 5.6h15.6c-1.1-1-2.1-2.6-2.1-5.6 0-3.2-1.5-5.7-4.2-6.6a1.6 1.6 0 0 0-1.5-2zM9.7 18.1a2.3 2.3 0 0 0 4.6 0z",
+  c: "M8.1 6.6c0-1.4 1.75-2.4 3.9-2.4s3.9 1 3.9 2.4-1.75 2.1-3.9 2.1S8.1 8 8.1 6.6zM8.5 9.3h7c.5 0 .82.42.72.92-.82 4.1-2.36 7.55-4.22 10.08-1.86-2.53-3.4-5.98-4.22-10.08-.1-.5.22-.92.72-.92z",
 };
 
 export function suitIcon(suit: Suit): SVGSVGElement {
@@ -47,8 +49,7 @@ export function cardEl(card: Card | null, opts: CardOpts = {}): HTMLElement {
     return h("div", { class: `card card--back ${size} ${anim}`.trim() }, h("div", { class: "card-weave" }));
   }
   const suit = suitOf(card);
-  const red = suit === "h" || suit === "d";
-  const cls = `card ${red ? "card--red" : "card--black"} ${size} ${anim} ${opts.dim ? "is-dim" : ""} ${opts.playable ? "card--play" : ""}`;
+  const cls = `card sc-${suit} ${size} ${anim} ${opts.dim ? "is-dim" : ""} ${opts.playable ? "card--play" : ""}`;
   const corner = (extra = "") =>
     h("div", { class: `card-corner ${extra}`.trim() }, h("span", { class: "card-rank" }, rankLabel(card)), h("span", { class: "card-csuit" }, suitIcon(suit)));
   return h(

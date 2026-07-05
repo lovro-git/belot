@@ -1,7 +1,7 @@
-import { SUIT_SYMBOL, SUITS, teamOf, type Card, type Suit } from "../engine/cards";
+import { SUITS, teamOf, type Card, type Suit } from "../engine/cards";
 import type { ClientView, PublicSeat } from "../net/protocol";
 import type { HandResult } from "../engine/types";
-import { cardEl } from "./cards";
+import { cardEl, suitIcon } from "./cards";
 import { clear, getTheme, h, icon, applyTheme } from "./dom";
 import { getLang, setLang, t } from "./i18n";
 import { isMuted, toggleMuted } from "./sound";
@@ -125,8 +125,7 @@ function initial(name: string): string {
 }
 
 function suitSpan(suit: Suit): HTMLElement {
-  const red = suit === "h" || suit === "d";
-  return h("span", { class: red ? "suit-red" : "suit-black" }, SUIT_SYMBOL[suit]);
+  return h("span", { class: `suit-ico sc-${suit}` }, suitIcon(suit));
 }
 
 export function renderTable(root: HTMLElement, v: ClientView, ui: UIState, handlers: TableHandlers): void {
