@@ -2,7 +2,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ClientView, PublicSeat } from "../net/protocol";
 import type { HandResult } from "../engine/types";
-import { renderLobby, renderTable, type TableHandlers, type UIState } from "./screens";
+import { renderLobby, renderTable, sortHand, type TableHandlers, type UIState } from "./screens";
+import { suitOf } from "../engine/cards";
 
 const noop = () => {};
 const handlers: TableHandlers = {
@@ -15,7 +16,7 @@ const handlers: TableHandlers = {
   leave: noop,
   rerender: noop,
 };
-const ui: UIState = { prevHand: 0, prevTrickCount: 0 };
+const ui: UIState = { prevHand: 0, prevTrickCount: 0, selectedCard: null };
 
 function seat(name: string, i: number, over: Partial<PublicSeat> = {}): PublicSeat {
   return {
@@ -75,6 +76,23 @@ beforeEach(() => {
   document.body.innerHTML = "";
   root = document.createElement("div");
   document.body.append(root);
+});
+
+describe("sortHand", () => {
+  it("groups by suit (trump first) and orders high-to-low within a suit", () => {
+    const hand = ["9d", "Kh", "7d", "Kd", "Th", "Ad", "Jc", "Qc"];
+    const sorted = sortHand(hand, "d"); // diamonds (bells) are trump → first
+    // Trump suit comes first as a contiguous block.
+    const trumpRun = sorted.filter((c) => suitOf(c) === "d");
+    expect(sorted.slice(0, trumpRun.length)).toEqual(trumpRun);
+    // Within trumps, natural high-to-low: A, K, 9, 7.
+    expect(trumpRun).toEqual(["Ad", "Kd", "9d", "7d"]);
+    // Same suits stay grouped together (no interleaving).
+    const suits = sorted.map(suitOf);
+    expect(new Set(suits.map((s, i) => `${s}${i}`)).size).toBe(8);
+    const groupChanges = suits.filter((s, i) => i > 0 && s !== suits[i - 1]).length;
+    expect(groupChanges).toBe(new Set(suits).size - 1);
+  });
 });
 
 describe("renderLobby", () => {

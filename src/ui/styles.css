@@ -1040,6 +1040,51 @@ input:focus-visible {
   gap: clamp(2px, 0.8vw, 8px);
   flex-wrap: nowrap;
   max-width: 100%;
+  touch-action: none; /* let hold-to-zoom win over scroll gestures */
+}
+.hand-row .card {
+  transition: transform 0.14s ease;
+  touch-action: none;
+}
+/* Tapped card, awaiting confirmation — raised and ringed. */
+.card.is-selected {
+  transform: translateY(-16px);
+  z-index: 6;
+}
+.card.is-selected .card-face {
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.4));
+  outline: 3px solid var(--gold);
+  outline-offset: -1px;
+  border-radius: var(--r-card);
+}
+/* Hold to zoom (press-and-hold any card). */
+.card.is-zoom {
+  transform: translateY(-46%) scale(2.3);
+  z-index: 60;
+}
+.card.is-zoom .card-face {
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.5));
+}
+.confirm-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.confirm-play {
+  width: auto;
+  padding: 11px 26px;
+}
+.cancel-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 15px;
+}
+.cancel-btn:hover {
+  color: var(--text);
+  filter: brightness(1.07);
 }
 .bid-bar {
   display: flex;

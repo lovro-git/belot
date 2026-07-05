@@ -20,6 +20,7 @@ export interface TableHandlers {
 export interface UIState {
   prevHand: number;
   prevTrickCount: number;
+  selectedCard: string | null; // tapped card awaiting confirmation
 }
 
 // --- Lobby -----------------------------------------------------------------
@@ -129,7 +130,6 @@ function suitSpan(suit: Suit): HTMLElement {
 }
 
 export function renderTable(root: HTMLElement, v: ClientView, ui: UIState, handlers: TableHandlers): void {
-  const s = t();
   const base = v.yourSeat >= 0 ? v.yourSeat : 0;
   const paused = v.matchStarted && v.disconnected.length > 0;
 
@@ -147,12 +147,9 @@ export function renderTable(root: HTMLElement, v: ClientView, ui: UIState, handl
     h("div", { class: "table-screen" },
       topbar(v, handlers),
       arena,
-      footer(v, handlers),
+      footer(v, ui, handlers),
     ),
   );
-
-  void ui;
-  void s;
 }
 
 function topbar(v: ClientView, handlers: TableHandlers): HTMLElement {
@@ -320,7 +317,7 @@ function pauseOverlay(v: ClientView): HTMLElement {
   );
 }
 
-function footer(v: ClientView, handlers: TableHandlers): HTMLElement {
+function footer(v: ClientView, ui: UIState, handlers: TableHandlers): HTMLElement {
   const s = t();
   // Spectator
   if (v.yourSeat < 0) {
@@ -348,19 +345,27 @@ function footer(v: ClientView, handlers: TableHandlers): HTMLElement {
         h("button", { class: "btn btn-ghost pass-btn", disabled: v.forcedBid, onclick: () => handlers.bid(null) },
           v.forcedBid ? s.mustCall : s.pass),
       ),
-      handRow(v, handlers, false),
+      handRow(v, ui, handlers, false),
     );
   }
 
   // Playing / waiting for others: show your hand
   const yourTurn = v.phase === "playing" && v.actor === v.yourSeat;
-  return h("div", { class: "footer" }, handRow(v, handlers, yourTurn));
+  // Drop a stale selection when it's not actionable anymore.
+  if (!yourTurn || !ui.selectedCard || !v.yourLegal.includes(ui.selectedCard)) ui.selectedCard = null;
+  const bar = ui.selectedCard
+    ? h("div", { class: "confirm-bar" },
+        h("button", { class: "btn btn-gold confirm-play", onclick: () => { const c = ui.selectedCard!; ui.selectedCard = null; handlers.play(c); } }, s.play),
+        h("button", { class: "cancel-btn", onclick: () => { ui.selectedCard = null; handlers.rerender(); } }, "✕"),
+      )
+    : null;
+  return h("div", { class: "footer" }, bar, handRow(v, ui, handlers, yourTurn));
 }
 
 const SUIT_ORDER: Suit[] = ["s", "h", "d", "c"];
 
 /** Sort a hand grouped by suit (trump first) then high-to-low within each suit. */
-function sortHand(cards: Card[], trump: Suit | null): Card[] {
+export function sortHand(cards: Card[], trump: Suit | null): Card[] {
   const suitKey = (su: Suit) => (trump && su === trump ? -1 : SUIT_ORDER.indexOf(su));
   return [...cards].sort((a, b) => {
     const sa = suitOf(a);
@@ -370,14 +375,55 @@ function sortHand(cards: Card[], trump: Suit | null): Card[] {
   });
 }
 
-function handRow(v: ClientView, handlers: TableHandlers, yourTurn: boolean): HTMLElement {
+function handRow(v: ClientView, ui: UIState, handlers: TableHandlers, yourTurn: boolean): HTMLElement {
   const legal = new Set(v.yourLegal);
-  const cards = sortHand(v.yourHand, v.trump).map((card) => {
+  const row = h("div", { class: "hand-row" });
+  for (const card of sortHand(v.yourHand, v.trump)) {
     const playable = yourTurn && legal.has(card);
     const dim = yourTurn && !legal.has(card);
-    return cardEl(card, { big: true, playable, dim, onClick: playable ? () => handlers.play(card) : undefined });
+    const el = cardEl(card, { big: true, playable, dim, selected: ui.selectedCard === card });
+    attachCardGestures(el, card, playable, ui, handlers);
+    row.append(el);
+  }
+  return row;
+}
+
+/** Hold any card to zoom it; tap a legal card to select, tap again (or Odigraj) to play. */
+function attachCardGestures(el: HTMLElement, card: Card, playable: boolean, ui: UIState, handlers: TableHandlers): void {
+  let holdTimer: ReturnType<typeof setTimeout> | undefined;
+  let held = false;
+  const unzoom = () => el.classList.remove("is-zoom");
+  el.addEventListener("pointerdown", (e) => {
+    held = false;
+    try {
+      el.setPointerCapture((e as PointerEvent).pointerId);
+    } catch {
+      /* not capturable — fine */
+    }
+    holdTimer = setTimeout(() => {
+      held = true;
+      el.classList.add("is-zoom");
+    }, 200);
   });
-  return h("div", { class: "hand-row" }, ...cards);
+  el.addEventListener("pointerup", () => {
+    clearTimeout(holdTimer);
+    if (held) {
+      unzoom();
+      return; // it was a hold-to-zoom, not a tap
+    }
+    if (!playable) return;
+    if (ui.selectedCard === card) {
+      ui.selectedCard = null;
+      handlers.play(card);
+    } else {
+      ui.selectedCard = card;
+      handlers.rerender();
+    }
+  });
+  el.addEventListener("pointercancel", () => {
+    clearTimeout(holdTimer);
+    unzoom();
+  });
 }
 
 // --- Shared controls -------------------------------------------------------

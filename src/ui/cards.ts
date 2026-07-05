@@ -31,6 +31,7 @@ export interface CardOpts {
   dim?: boolean; // illegal / not playable — greyed
   slot?: boolean; // empty placeholder outline
   playable?: boolean; // legal to play — hover lift + pointer
+  selected?: boolean; // tapped, awaiting confirmation — raised
   anim?: boolean;
   onClick?: () => void;
 }
@@ -43,7 +44,7 @@ export function cardEl(card: Card | null, opts: CardOpts = {}): HTMLElement {
   if (!card || opts.faceDown) {
     return h("div", { class: `card card--img ${size} ${anim}`.trim() }, h("img", { class: "card-face", src: BACK_URL, alt: "", draggable: "false" }));
   }
-  const cls = `card card--img ${size} ${anim} ${opts.dim ? "is-dim" : ""} ${opts.playable ? "card--play" : ""}`;
+  const cls = `card card--img ${size} ${anim} ${opts.dim ? "is-dim" : ""} ${opts.playable ? "card--play" : ""} ${opts.selected ? "is-selected" : ""}`;
   return h(
     "div",
     { class: cls.trim().replace(/\s+/g, " "), ...(opts.onClick ? { onclick: opts.onClick } : {}) },

@@ -46,7 +46,7 @@ function isTestKey(key: string): boolean {
 
 let client: Client | null = null;
 let view: ClientView | null = null;
-const ui: UIState = { prevHand: 0, prevTrickCount: 0 };
+const ui: UIState = { prevHand: 0, prevTrickCount: 0, selectedCard: null };
 let connectTimer: ReturnType<typeof setTimeout> | null = null;
 
 function toast(text: string) {
