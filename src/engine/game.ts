@@ -194,10 +194,21 @@ export function playCard(s: GameState, seat: number, card: string): boolean {
 
   if (h.currentTrick.length < 4) {
     h.turn = (seat + 1) % 4;
-    return true;
+  } else {
+    h.turn = -1; // trick complete — all four cards stay on the table until resolveTrick()
   }
+  return true;
+}
 
-  // Trick complete.
+/** Is a completed 4-card trick sitting on the table, waiting to be gathered? */
+export function trickPending(s: GameState): boolean {
+  return s.phase === "playing" && !!s.hand && s.hand.currentTrick.length === 4;
+}
+
+/** Gather a completed trick to its winner (called after a short display pause). */
+export function resolveTrick(s: GameState): boolean {
+  if (!trickPending(s)) return false;
+  const h = s.hand!;
   const winner = trickWinnerSeat(h.currentTrick, h.trump!);
   h.tricks.push(h.currentTrick);
   h.trickWinners.push(winner);

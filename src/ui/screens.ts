@@ -136,7 +136,7 @@ export function renderTable(root: HTMLElement, v: ClientView, ui: UIState, handl
 
   const arena = h("div", { class: "arena" },
     h("div", { class: "felt-wrap" },
-      h("div", { class: "felt" }),
+      h("div", { class: "felt" }, v.trump ? h("div", { class: "felt-mark" }, suitSpan(v.trump)) : null),
       scoreboard(v),
       ...v.seats.map((seat, i) => seatPod(v, seat, i, (i - base + 4) % 4, handlers)),
       h("div", { class: "center" }, ...centerContent(v, handlers)),
@@ -207,7 +207,9 @@ function seatPod(v: ClientView, seat: PublicSeat | null, index: number, rel: num
     seat.isActor ? "is-acting" : "",
     !seat.connected ? "is-off" : "",
   ].join(" ");
+  const showFan = seat.playerId !== v.you && seat.cards > 0;
   return h("div", { class: `seat seat-${pos}` },
+    showFan ? fanBacks(seat.cards) : null,
     h("div", { class: cls },
       h("div", { class: "pod-av" }, initial(seat.name), !seat.connected ? h("span", { class: "off-dot" }) : null),
       h("div", { class: "pod-info" },
@@ -219,6 +221,17 @@ function seatPod(v: ClientView, seat: PublicSeat | null, index: number, rel: num
       ),
     ),
   );
+}
+
+/** A fanned stack of face-down card backs, showing how many cards a seat holds. */
+function fanBacks(n: number): HTMLElement {
+  const count = Math.min(n, 8);
+  const spread = 8; // degrees per card from centre
+  const mid = (count - 1) / 2;
+  const cards = Array.from({ length: count }, (_, i) =>
+    h("div", { class: "fan-card", style: `--rot:${(i - mid) * spread}deg` }, h("div", { class: "mini-back" })),
+  );
+  return h("div", { class: "pod-fan" }, ...cards);
 }
 
 function trickPile(v: ClientView): HTMLElement {
@@ -249,13 +262,15 @@ function centerContent(v: ClientView, handlers: TableHandlers): Array<HTMLElemen
   // bidding or playing
   const actorName = v.actor >= 0 && v.seats[v.actor] ? v.seats[v.actor]!.name : "";
   const status =
-    v.phase === "bidding"
-      ? v.actor === v.yourSeat
-        ? s.yourBidTurn
-        : s.bidding(actorName)
-      : v.actor === v.yourSeat
-        ? s.yourPlayTurn
-        : s.playing(actorName);
+    v.actor < 0
+      ? "" // a completed trick is on the table, being gathered
+      : v.phase === "bidding"
+        ? v.actor === v.yourSeat
+          ? s.yourBidTurn
+          : s.bidding(actorName)
+        : v.actor === v.yourSeat
+          ? s.yourPlayTurn
+          : s.playing(actorName);
   return [
     trickPile(v),
     h("div", { class: "center-status" }, status),

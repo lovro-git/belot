@@ -10,8 +10,10 @@ import {
   nextHand,
   playCard,
   readyToStart,
+  resolveTrick,
   seatPlayer,
   startMatch,
+  trickPending,
 } from "./game";
 import type { GameState } from "./types";
 
@@ -43,7 +45,11 @@ function bidFirstCallsSpades(s: GameState) {
 /** Play every card by always choosing the first legal move, until the hand resolves. */
 function playOutHand(s: GameState) {
   let guard = 0;
-  while (s.phase === "playing" && guard++ < 40) {
+  while (s.phase === "playing" && guard++ < 80) {
+    if (trickPending(s)) {
+      resolveTrick(s);
+      continue;
+    }
     const actor = currentActor(s);
     const legal = legalPlays(s, actor);
     expect(legal.length).toBeGreaterThan(0);
@@ -89,6 +95,29 @@ describe("bidding — mus", () => {
     expect(applyBid(s, dealerActor, { type: "call", suit: "h" })).toBe(true);
     expect(s.phase).toBe("playing");
     expect(s.hand!.caller).toBe(s.hand!.dealer);
+  });
+});
+
+describe("trick display pause", () => {
+  it("keeps the completed trick on the table until resolveTrick", () => {
+    const s = createGame(defaultConfig(1001));
+    seatFour(s);
+    startMatch(s, rng(3));
+    bidFirstCallsSpades(s);
+    for (let i = 0; i < 4; i++) {
+      const a = currentActor(s);
+      playCard(s, a, legalPlays(s, a)[0]);
+    }
+    // All four cards are still shown; nobody is to act yet.
+    expect(trickPending(s)).toBe(true);
+    expect(s.hand!.currentTrick.length).toBe(4);
+    expect(currentActor(s)).toBe(-1);
+    expect(s.hand!.tricks.length).toBe(0);
+    // Gathering the trick advances to the winner.
+    expect(resolveTrick(s)).toBe(true);
+    expect(s.hand!.currentTrick.length).toBe(0);
+    expect(s.hand!.tricks.length).toBe(1);
+    expect(currentActor(s)).toBeGreaterThanOrEqual(0);
   });
 });
 

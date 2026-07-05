@@ -49,10 +49,13 @@ export function cardEl(card: Card | null, opts: CardOpts = {}): HTMLElement {
   const suit = suitOf(card);
   const red = suit === "h" || suit === "d";
   const cls = `card ${red ? "card--red" : "card--black"} ${size} ${anim} ${opts.dim ? "is-dim" : ""} ${opts.playable ? "card--play" : ""}`;
+  const corner = (extra = "") =>
+    h("div", { class: `card-corner ${extra}`.trim() }, h("span", { class: "card-rank" }, rankLabel(card)), h("span", { class: "card-csuit" }, suitIcon(suit)));
   return h(
     "div",
     { class: cls.trim().replace(/\s+/g, " "), ...(opts.onClick ? { onclick: opts.onClick } : {}) },
-    h("div", { class: "card-corner" }, h("span", { class: "card-rank" }, rankLabel(card)), h("span", { class: "card-csuit" }, suitIcon(suit))),
+    corner(),
     h("div", { class: "card-pip" }, suitIcon(suit)),
+    opts.small ? null : corner("card-corner--br"),
   );
 }

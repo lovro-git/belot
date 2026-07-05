@@ -214,13 +214,20 @@ input:focus-visible {
 .card-csuit {
   font-size: calc(var(--card-big-w) * 0.26);
 }
+.card-corner--br {
+  top: auto;
+  left: auto;
+  bottom: 5%;
+  right: 7%;
+  transform: rotate(180deg);
+}
 .card-pip {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: calc(var(--card-big-w) * 0.56);
-  opacity: 0.92;
+  font-size: calc(var(--card-big-w) * 0.5);
+  opacity: 0.9;
 }
 .card--sm .card-rank {
   font-size: calc(var(--card-sm-w) * 0.4);
@@ -553,12 +560,40 @@ input:focus-visible {
   position: absolute;
   inset: 0;
   border-radius: clamp(40px, 12vmin, 120px);
-  background: radial-gradient(62% 58% at 50% 44%, var(--felt-hi), var(--felt-lo) 66%, var(--felt-edge) 100%);
+  background:
+    radial-gradient(58% 54% at 50% 42%, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0) 60%),
+    radial-gradient(70% 66% at 50% 46%, var(--felt-hi), var(--felt-lo) 62%, var(--felt-edge) 100%);
   box-shadow:
-    inset 0 0 0 clamp(7px, 1.3vw, 14px) var(--rail),
-    inset 0 0 0 calc(clamp(7px, 1.3vw, 14px) + 2px) rgba(231, 180, 90, 0.2),
-    inset 0 14px 60px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 clamp(8px, 1.5vw, 16px) var(--rail),
+    inset 0 0 0 calc(clamp(8px, 1.5vw, 16px) + 2px) rgba(231, 180, 90, 0.28),
+    inset 0 0 90px rgba(0, 0, 0, 0.4),
+    inset 0 18px 70px rgba(0, 0, 0, 0.3),
     var(--shadow-lg);
+}
+.felt::after {
+  content: "";
+  position: absolute;
+  inset: clamp(16px, 4%, 34px);
+  border-radius: clamp(30px, 10vmin, 100px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+}
+/* Big faint trump suit watermarked on the felt centre. */
+.felt-mark {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(120px, 26vmin, 260px);
+  line-height: 1;
+  opacity: 0.09;
+  pointer-events: none;
+}
+.felt-mark .suit-black {
+  color: #000;
+}
+.felt-mark .suit-red {
+  color: #fff;
 }
 
 /* --- Scoreboard overlay --- */
@@ -1016,6 +1051,33 @@ input:focus-visible {
   100% {
     opacity: 0;
   }
+}
+
+/* --- Face-down card fan behind each opponent pod --- */
+.pod-fan {
+  position: absolute;
+  left: 50%;
+  top: calc(100% - 4px);
+  transform: translateX(-50%);
+  display: flex;
+  z-index: 1;
+  pointer-events: none;
+}
+.seat-top .pod-fan {
+  top: auto;
+  bottom: calc(100% - 4px);
+}
+.fan-card {
+  transform: rotate(var(--rot, 0deg));
+  transform-origin: bottom center;
+  margin: 0 -5px;
+}
+.mini-back {
+  width: calc(var(--card-sm-w) * 0.62);
+  height: calc(var(--card-sm-w) * 0.62 * 1.4);
+  border-radius: 4px;
+  background: repeating-linear-gradient(45deg, #2b3948 0 5px, #243040 5px 10px);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.1), 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
 /* ============================================================

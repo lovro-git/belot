@@ -26,6 +26,7 @@ function seat(name: string, i: number, over: Partial<PublicSeat> = {}): PublicSe
     isDealer: false,
     isCaller: false,
     isActor: false,
+    cards: 8,
     ...over,
   };
 }
@@ -129,6 +130,30 @@ describe("renderTable across phases", () => {
     expect(root.querySelectorAll(".card--play").length).toBe(2);
     expect(root.querySelector(".trick-card")).toBeTruthy();
     expect(root.querySelector(".scoreboard")).toBeTruthy();
+    // Opponents/partner show face-down fans (3 pods, not your own seat).
+    expect(root.querySelectorAll(".pod-fan").length).toBe(3);
+  });
+
+  it("playing: renders all four cards of a completed trick", () => {
+    renderTable(
+      root,
+      baseView({
+        matchStarted: true,
+        phase: "playing",
+        trump: "s",
+        actor: -1, // trick complete, being gathered
+        yourHand: ["As"],
+        currentTrick: [
+          { seat: 0, card: "9h" },
+          { seat: 1, card: "Ah" },
+          { seat: 2, card: "7s" },
+          { seat: 3, card: "8h" },
+        ],
+      }),
+      ui,
+      handlers,
+    );
+    expect(root.querySelectorAll(".trick-card").length).toBe(4);
   });
 
   it("handScored: shows the result banner", () => {

@@ -25,6 +25,7 @@ export interface PublicSeat {
   isDealer: boolean;
   isCaller: boolean;
   isActor: boolean; // whose turn to bid/play
+  cards: number; // how many cards this seat is holding (for face-down fans)
 }
 
 export interface ClientView {
@@ -90,6 +91,7 @@ export function viewFor(state: GameState, ctx: ViewContext): ClientView {
       isDealer: !!h && h.dealer === i,
       isCaller: !!h && h.caller === i,
       isActor: actor === i,
+      cards: h ? (h.revealed ? h.hands[i].length : 6) : 0,
     };
   });
 

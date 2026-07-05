@@ -12,8 +12,10 @@ import {
   rematch,
   readyToStart,
   removePlayer,
+  resolveTrick,
   seatPlayer,
   startMatch,
+  trickPending,
 } from "../engine/game";
 import type { Config, GameState } from "../engine/types";
 import { viewFor, type ClientView, type Command } from "./protocol";
@@ -40,6 +42,7 @@ const BROKER = "wss://broker.emqx.io:8084/mqtt";
 const HEARTBEAT_MS = 3000;
 const PRESENCE_TIMEOUT_MS = 9000;
 const HAND_PAUSE_MS = 6000;
+const TRICK_PAUSE_MS = 1300;
 
 const cmdTopic = (room: string) => `blt/${room}/c`;
 const stateTopic = (room: string, playerId: string) => `blt/${room}/s/${playerId}`;
@@ -80,6 +83,7 @@ class HostClient implements Client {
   private presence: ReturnType<typeof setInterval>;
   private mockIds = new Set<string>();
   private progressScheduled = false;
+  private trickScheduled = false;
   private botKey = "";
   private stopped = false;
 
@@ -229,6 +233,19 @@ class HostClient implements Client {
   private drive() {
     if (this.stopped) return;
     const s = this.state;
+
+    // Hold a completed trick on the table briefly, then gather it to its winner.
+    if (trickPending(s) && !this.trickScheduled) {
+      this.trickScheduled = true;
+      setTimeout(() => {
+        this.trickScheduled = false;
+        if (!this.stopped && trickPending(this.state)) {
+          resolveTrick(this.state);
+          this.afterChange();
+        }
+      }, TRICK_PAUSE_MS);
+      return;
+    }
 
     // Auto-advance to the next hand after the scoring pause.
     if (s.phase === "handScored" && !this.progressScheduled) {

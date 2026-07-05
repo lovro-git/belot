@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { botBid, botPlay } from "../engine/bots";
-import { applyBid, createGame, currentActor, playCard, seatPlayer, startMatch } from "../engine/game";
+import { applyBid, createGame, currentActor, playCard, resolveTrick, seatPlayer, startMatch, trickPending } from "../engine/game";
 import type { GameState } from "../engine/types";
 import { viewFor, type ViewContext } from "./protocol";
 
@@ -71,7 +71,11 @@ describe("viewFor redaction", () => {
   it("drives a full bot hand end-to-end through the view pipeline", () => {
     const s = newMatch();
     let guard = 0;
-    while ((s.phase === "bidding" || s.phase === "playing") && guard++ < 60) {
+    while ((s.phase === "bidding" || s.phase === "playing") && guard++ < 90) {
+      if (trickPending(s)) {
+        resolveTrick(s);
+        continue;
+      }
       const actor = currentActor(s);
       if (s.phase === "bidding") applyBid(s, actor, botBid(s, actor));
       else playCard(s, actor, botPlay(s, actor));
