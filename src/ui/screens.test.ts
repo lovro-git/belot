@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ClientView, PublicSeat } from "../net/protocol";
 import type { Declaration, HandResult } from "../engine/types";
-import { renderLobby, renderTable, sortHand, type TableHandlers, type UIState } from "./screens";
+import { renderJoin, renderLobby, renderTable, sortHand, type TableHandlers, type UIState } from "./screens";
 import { suitOf } from "../engine/cards";
 
 const noop = () => {};
@@ -103,6 +103,16 @@ describe("renderLobby", () => {
     renderLobby(root, "", "", { create: noop, join: noop });
     expect(root.querySelector(".lobby-card")).toBeTruthy();
     expect(root.querySelector("input.input")).toBeTruthy();
+  });
+});
+
+describe("renderJoin", () => {
+  it("shows only a name field and a join button (no room creation)", () => {
+    renderJoin(root, "BEL-ABCD", "", () => {});
+    expect(root.querySelectorAll("input.input").length).toBe(1); // just the name
+    expect(root.textContent).toContain("BEL-ABCD");
+    // No target selector / create controls.
+    expect(root.querySelector(".seg")).toBeFalsy();
   });
 });
 

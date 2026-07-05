@@ -71,7 +71,7 @@ export function renderLobby(root: HTMLElement, prefillKey: string, err: string, 
             h("span", { class: "suits" }, "♠", h("span", { class: "r" }, "♥"), h("span", { class: "r" }, "♦"), "♣"),
           ),
           h("div", { class: "brand-spacer" }),
-          langButton(handlers as unknown as TableHandlers, root, () => renderLobby(root, keyInput.value.trim(), "", handlers)),
+          langButton(() => renderLobby(root, keyInput.value.trim(), "", handlers)),
           themeBtn(() => {}),
         ),
         h("p", { class: "lobby-sub" }, s.tagline),
@@ -95,6 +95,52 @@ export function renderLobby(root: HTMLElement, prefillKey: string, err: string, 
       ),
     ),
   );
+}
+
+/** Arriving via an invite link: just ask for a name, then join. */
+export function renderJoin(root: HTMLElement, roomKey: string, err: string, onJoin: (name: string) => void): void {
+  const s = t();
+  const nameInput = h("input", {
+    class: "input",
+    type: "text",
+    maxlength: "16",
+    placeholder: s.namePlaceholder,
+    value: localStorage.getItem("belot:name") ?? "",
+  }) as HTMLInputElement;
+  const errEl = h("div", { class: "err" }, err);
+  const submit = () => {
+    const name = nameInput.value.trim();
+    if (!name) {
+      errEl.textContent = s.name;
+      return;
+    }
+    localStorage.setItem("belot:name", name);
+    onJoin(name);
+  };
+  nameInput.addEventListener("keydown", (e) => {
+    if ((e as KeyboardEvent).key === "Enter") submit();
+  });
+
+  clear(root).append(
+    h("div", { class: "lobby" },
+      h("div", { class: "lobby-card" },
+        h("div", { class: "lobby-top" },
+          h("div", { class: "brand" },
+            h("h1", {}, "Belot"),
+            h("span", { class: "suits" }, "♠", h("span", { class: "r" }, "♥"), h("span", { class: "r" }, "♦"), "♣"),
+          ),
+          h("div", { class: "brand-spacer" }),
+          langButton(() => renderJoin(root, roomKey, "", onJoin)),
+          themeBtn(() => {}),
+        ),
+        h("p", { class: "lobby-sub" }, `${s.join} · ${roomKey}`),
+        h("div", { class: "field" }, h("label", {}, s.name), nameInput),
+        h("button", { class: "btn btn-gold btn-join", onclick: submit }, s.join),
+        errEl,
+      ),
+    ),
+  );
+  nameInput.focus();
 }
 
 export function renderConnecting(root: HTMLElement, key: string, onLeave: () => void, slow = false): void {
@@ -475,7 +521,7 @@ function themeBtn(after: () => void): HTMLElement {
   return btn;
 }
 
-function langButton(_h: TableHandlers, _root: HTMLElement, after: () => void): HTMLElement {
+function langButton(after: () => void): HTMLElement {
   const btn = h("button", { class: "icon-btn", title: "Language" });
   const paint = () => (btn.textContent = getLang().toUpperCase());
   btn.addEventListener("click", () => {

@@ -168,7 +168,11 @@ export function viewFor(state: GameState, ctx: ViewContext): ClientView {
     lastTrickWinner: h && h.trickWinners.length ? h.trickWinners[h.trickWinners.length - 1] : -1,
     declActor: state.phase === "declaring" ? actor : -1,
     yourDeclarations: h && yourSeat >= 0 ? h.declarations.filter((d) => d.seat === yourSeat) : [],
-    declarations: h ? h.declarations.filter((d) => d.announced) : [],
+    // Reveal only once resolved, and only the winning team's announced zvanja.
+    declarations:
+      h && h.declResolved && h.declWinnerTeam >= 0
+        ? h.declarations.filter((d) => d.announced && teamOf(d.seat) === h.declWinnerTeam)
+        : [],
     declWinnerTeam: h?.declWinnerTeam ?? -1,
     declPoints: h?.declPoints ?? [0, 0],
     belaAnnouncedTeam: h && h.belaShown && h.belaSeat >= 0 ? teamOf(h.belaSeat) : -1,
