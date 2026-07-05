@@ -51,8 +51,8 @@
   --shadow: 0 8px 26px rgba(20, 30, 50, 0.12);
   --shadow-lg: 0 22px 55px rgba(20, 30, 50, 0.16);
 
-  --card-big-w: clamp(42px, 9vw, 74px); /* your hand */
-  --card-sm-w: clamp(34px, 5.4vw, 52px); /* trick pile */
+  --card-big-w: clamp(64px, 12vw, 104px); /* your hand */
+  --card-sm-w: clamp(38px, 6vw, 58px); /* trick pile */
   --av-size: clamp(40px, 5vw, 60px);
 
   --ff-display: "Space Grotesk", system-ui, sans-serif;
@@ -179,7 +179,10 @@ input:focus-visible {
   display: block;
   filter: drop-shadow(0 3px 6px rgba(20, 30, 50, 0.3));
   -webkit-user-drag: none;
+  -webkit-user-select: none;
   user-select: none;
+  -webkit-touch-callout: none;
+  pointer-events: none;
 }
 .card--deal {
   animation: deal 0.4s cubic-bezier(0.22, 0.68, 0.24, 1) both;
@@ -1037,33 +1040,38 @@ input:focus-visible {
 .hand-row {
   display: flex;
   justify-content: center;
-  gap: clamp(2px, 0.8vw, 8px);
   flex-wrap: nowrap;
   max-width: 100%;
-  touch-action: none; /* let hold-to-zoom win over scroll gestures */
+  padding-top: 22px; /* headroom for the lifted/selected card */
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
+/* Cards overlap so they can be large yet still fit eight across. */
 .hand-row .card {
+  margin-left: calc(var(--card-big-w) * -0.42);
   transition: transform 0.14s ease;
-  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
-/* Tapped card, awaiting confirmation — raised and ringed. */
+.hand-row .card:first-child {
+  margin-left: 0;
+}
+.hand-row .card:hover {
+  z-index: 5;
+}
+/* Tapped card, awaiting confirmation — lifted clear of its neighbours and ringed. */
 .card.is-selected {
-  transform: translateY(-16px);
-  z-index: 6;
+  transform: translateY(-22px);
+  z-index: 20;
 }
 .card.is-selected .card-face {
-  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.4));
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.42));
   outline: 3px solid var(--gold);
   outline-offset: -1px;
   border-radius: var(--r-card);
-}
-/* Hold to zoom (press-and-hold any card). */
-.card.is-zoom {
-  transform: translateY(-46%) scale(2.3);
-  z-index: 60;
-}
-.card.is-zoom .card-face {
-  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.5));
 }
 .confirm-bar {
   display: flex;
@@ -1200,8 +1208,8 @@ input:focus-visible {
    ============================================================ */
 @media (max-width: 640px) {
   :root {
-    --card-big-w: clamp(38px, 11vw, 60px);
-    --card-sm-w: clamp(30px, 8vw, 44px);
+    --card-big-w: clamp(58px, 18vw, 92px);
+    --card-sm-w: clamp(34px, 9vw, 50px);
     --av-size: clamp(34px, 10vw, 50px);
   }
   .felt-wrap {
@@ -1231,8 +1239,8 @@ input:focus-visible {
 
 @media (orientation: landscape) and (max-height: 520px) {
   :root {
-    --card-big-w: clamp(34px, 11vh, 56px);
-    --card-sm-w: clamp(28px, 9vh, 46px);
+    --card-big-w: clamp(50px, 15vh, 84px);
+    --card-sm-w: clamp(32px, 10vh, 52px);
     --av-size: clamp(34px, 11vh, 52px);
   }
   .felt-wrap {

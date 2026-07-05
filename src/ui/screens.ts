@@ -388,30 +388,34 @@ function handRow(v: ClientView, ui: UIState, handlers: TableHandlers, yourTurn: 
   return row;
 }
 
-/** Hold any card to zoom it; tap a legal card to select, tap again (or Odigraj) to play. */
+/**
+ * Tap a legal card to select it, tap again (or press Odigraj) to play. A long
+ * press or a drag is ignored — so holding never selects (and never triggers the
+ * iOS text/image callout, which the CSS also suppresses).
+ */
 function attachCardGestures(el: HTMLElement, card: Card, playable: boolean, ui: UIState, handlers: TableHandlers): void {
-  let holdTimer: ReturnType<typeof setTimeout> | undefined;
-  let held = false;
-  const unzoom = () => el.classList.remove("is-zoom");
+  if (!playable) return;
+  let longPress = false;
+  let moved = false;
+  let sx = 0;
+  let sy = 0;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   el.addEventListener("pointerdown", (e) => {
-    held = false;
-    try {
-      el.setPointerCapture((e as PointerEvent).pointerId);
-    } catch {
-      /* not capturable — fine */
-    }
-    holdTimer = setTimeout(() => {
-      held = true;
-      el.classList.add("is-zoom");
-    }, 200);
+    const pe = e as PointerEvent;
+    longPress = false;
+    moved = false;
+    sx = pe.clientX;
+    sy = pe.clientY;
+    timer = setTimeout(() => (longPress = true), 450);
   });
-  el.addEventListener("pointerup", () => {
-    clearTimeout(holdTimer);
-    if (held) {
-      unzoom();
-      return; // it was a hold-to-zoom, not a tap
-    }
-    if (!playable) return;
+  el.addEventListener("pointermove", (e) => {
+    const pe = e as PointerEvent;
+    if (Math.abs(pe.clientX - sx) > 12 || Math.abs(pe.clientY - sy) > 12) moved = true;
+  });
+  el.addEventListener("pointerup", (e) => {
+    clearTimeout(timer);
+    if (longPress || moved) return; // a hold or a drag never selects
+    e.preventDefault();
     if (ui.selectedCard === card) {
       ui.selectedCard = null;
       handlers.play(card);
@@ -420,10 +424,7 @@ function attachCardGestures(el: HTMLElement, card: Card, playable: boolean, ui: 
       handlers.rerender();
     }
   });
-  el.addEventListener("pointercancel", () => {
-    clearTimeout(holdTimer);
-    unzoom();
-  });
+  el.addEventListener("pointercancel", () => clearTimeout(timer));
 }
 
 // --- Shared controls -------------------------------------------------------
