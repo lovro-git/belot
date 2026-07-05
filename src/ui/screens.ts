@@ -448,20 +448,18 @@ export function sortHand(cards: Card[], trump: Suit | null, mode: SortMode = "su
 
 const DECL_LABEL: Record<string, string> = { seq3: "Terca", seq4: "Kvarta", seq5: "Kvinta", four: "Karé" };
 
-/** The winning team's announced zvanja (cards + value); note if the other team also called. */
+/** Every announced zvanje as "name — value"; the winning team's also shows its cards. */
 function declList(v: ClientView): HTMLElement | null {
   if (v.declarations.length === 0) return null;
-  const winner = v.declWinnerTeam as 0 | 1;
-  const other = (1 - winner) as 0 | 1;
+  const items = [...v.declarations].sort((a, b) => a.order - b.order);
   return h("div", { class: "decl-panel" },
-    ...v.declarations.map((d) =>
-      h("div", { class: "decl-item" },
+    ...items.map((d) =>
+      h("div", { class: `decl-item ${d.cards.length ? "is-winner" : ""}` },
         h("span", { class: "decl-who" }, v.seats[d.seat]?.name ?? ""),
-        h("div", { class: "decl-cards" }, ...d.cards.map((c) => cardEl(c, { small: true }))),
+        d.cards.length ? h("div", { class: "decl-cards" }, ...d.cards.map((c) => cardEl(c, { small: true }))) : null,
         h("span", { class: "decl-val" }, `${DECL_LABEL[d.kind]} ${d.points}`),
       ),
     ),
-    v.declaredTeams[other] ? h("div", { class: "decl-other" }, t().alsoDeclared(teamLabel(v, other))) : null,
   );
 }
 

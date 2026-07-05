@@ -65,7 +65,6 @@ function baseView(over: Partial<ClientView> = {}): ClientView {
     declActor: -1,
     yourDeclarations: [],
     declarations: [],
-    declaredTeams: [false, false],
     declWinnerTeam: -1,
     declPoints: [0, 0],
     belaAnnouncedTeam: -1,
@@ -202,17 +201,19 @@ describe("renderTable across phases", () => {
   });
 
   it("declaring: your announce prompt, and everyone sees the announced zvanja", () => {
-    const decl: Declaration = { seat: 0, kind: "seq3", points: 20, order: 0, cards: ["7s", "8s", "9s"], announced: true };
+    const mine: Declaration = { seat: 0, kind: "seq3", points: 20, order: 0, cards: ["7s", "8s", "9s"], announced: true };
+    // Reveal: both callers listed by name+value; only the winner (seat 1, 50) shows cards.
+    const winner: Declaration = { seat: 1, kind: "seq4", points: 50, order: 1, cards: ["7h", "8h", "9h", "Th"], announced: true };
+    const loserShown: Declaration = { seat: 0, kind: "seq3", points: 20, order: 0, cards: [], announced: true };
     renderTable(
       root,
-      baseView({ matchStarted: true, phase: "declaring", trump: "s", declActor: 0, yourDeclarations: [decl], declarations: [decl], declWinnerTeam: 0, declaredTeams: [true, true] }),
+      baseView({ matchStarted: true, phase: "declaring", trump: "s", declActor: 0, yourDeclarations: [mine], declarations: [winner, loserShown], declWinnerTeam: 1 }),
       ui,
       handlers,
     );
     expect(root.querySelectorAll(".footer .bid-bar button").length).toBe(2); // Zovi + Preskoči
-    expect(root.querySelector(".decl-panel")).toBeTruthy();
-    expect(root.querySelectorAll(".decl-cards .card").length).toBe(3); // the terca's three cards
-    expect(root.querySelector(".decl-other")).toBeTruthy(); // the other team also declared
+    expect(root.querySelectorAll(".decl-item").length).toBe(2); // both callers listed
+    expect(root.querySelectorAll(".decl-cards").length).toBe(1); // only the winner's cards shown
   });
 
   it("handScored: shows the result banner", () => {

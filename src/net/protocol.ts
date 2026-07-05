@@ -66,8 +66,8 @@ export interface ClientView {
 
   declActor: number; // seat currently deciding whether to announce its zvanje (-1)
   yourDeclarations: Declaration[]; // your own detected zvanja (for the announce prompt)
-  declarations: Declaration[]; // announced zvanja, shown to everyone (with their cards)
-  declaredTeams: [boolean, boolean]; // which teams announced a zvanje (even the losing one)
+  /** All announced zvanja (name + value shown to everyone); cards only for the winning team. */
+  declarations: Declaration[];
   declWinnerTeam: 0 | 1 | -1;
   declPoints: [number, number];
   belaAnnouncedTeam: 0 | 1 | -1; // once the first bela card is played
@@ -170,15 +170,14 @@ export function viewFor(state: GameState, ctx: ViewContext): ClientView {
     declActor: state.phase === "declaring" ? actor : -1,
     yourDeclarations: h && yourSeat >= 0 ? h.declarations.filter((d) => d.seat === yourSeat) : [],
     // Reveal only once resolved, and only the winning team's announced zvanja.
+    // Everyone sees each announced zvanje's owner + value; only the winning
+    // team's actual cards are revealed (losing cards are stripped to []).
     declarations:
-      h && h.declResolved && h.declWinnerTeam >= 0
-        ? h.declarations.filter((d) => d.announced && teamOf(d.seat) === h.declWinnerTeam)
+      h && h.declResolved
+        ? h.declarations
+            .filter((d) => d.announced)
+            .map((d) => (teamOf(d.seat) === h.declWinnerTeam ? d : { ...d, cards: [] }))
         : [],
-    declaredTeams: (() => {
-      const dt: [boolean, boolean] = [false, false];
-      if (h && h.declResolved) for (const d of h.declarations) if (d.announced) dt[teamOf(d.seat)] = true;
-      return dt;
-    })(),
     declWinnerTeam: h?.declWinnerTeam ?? -1,
     declPoints: h?.declPoints ?? [0, 0],
     belaAnnouncedTeam: h && h.belaShown && h.belaSeat >= 0 ? teamOf(h.belaSeat) : -1,
