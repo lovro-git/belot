@@ -208,6 +208,7 @@ function topbar(v: ClientView, handlers: TableHandlers): HTMLElement {
       h("button", { onclick: handlers.copyLink }, icon("link"), h("span", { class: "copy-txt" }, s.copyInvite)),
     ),
     h("div", { class: "tb-spacer" }),
+    sortToggle(handlers),
     settingsMenu(handlers),
     h("button", { onclick: handlers.leave }, icon("right-from-bracket"), h("span", { class: "leave-txt" }, s.leaveShort)),
   );
@@ -473,19 +474,16 @@ function handRow(v: ClientView, ui: UIState, handlers: TableHandlers, yourTurn: 
     attachCardGestures(el, card, playable, ui, handlers);
     row.append(el);
   }
-  return h("div", { class: "hand-wrap" },
-    v.yourHand.length > 0 ? h("div", { class: "hand-tools" }, sortToggle(handlers)) : null,
-    row,
-  );
+  return row;
 }
 
-/** A small toggle beside the hand: sort by suit (Znak) or by size (Veličina). */
+/** Top-bar toggle: sort the hand by suit (Znak) or by size (Veličina). */
 function sortToggle(handlers: TableHandlers): HTMLElement {
   const s = t();
   const mode = getSort();
   return h("button", { class: "sort-toggle", title: s.sorting, onclick: () => { setSort(mode === "suit" ? "size" : "suit"); handlers.rerender(); } },
     icon("arrow-down-wide-short"),
-    h("span", {}, mode === "suit" ? s.bySuit : s.bySize),
+    h("span", { class: "sort-lbl" }, mode === "suit" ? s.bySuit : s.bySize),
   );
 }
 
